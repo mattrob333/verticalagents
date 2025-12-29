@@ -1,0 +1,140 @@
+# Vertical Agent Factory Configuration
+# This file controls how the factory builds and outputs vertical agents
+
+factory:
+  version: "1.0.0"
+  name: "Vertical Agent Factory"
+  description: "Meta-system for building vertical AI agents for SMBs"
+
+# Output configuration - where generated agents are created
+output:
+  # Default output directory for generated agent apps
+  # Can be overridden via CLI: --output-dir /path/to/dir
+  # Or in conversation: "output to ~/MyAgents/"
+  default_dir: "~/VerticalAgents"
+
+  # Structure inside each generated agent directory
+  structure:
+    app_dir: "src"
+    agent_dir: "src/agent"
+    components_dir: "src/components"
+    marketing_dir: "marketing"
+    deploy_dir: "deploy"
+
+# Discovery phase configuration
+discovery:
+  # Web search provider for market research
+  # Options: "firecrawl", "exa", "web_search"
+  search_provider: "firecrawl"
+
+  # Maximum search results to analyze
+  max_results: 10
+
+  # Existing playbook examples to cross-reference
+  # These are used to enrich discovery with proven patterns
+  playbook_examples:
+    - "verticals/construction-rfq"
+    - "verticals/personal-injury-law"
+    - "knowledge/industry-playbooks"
+
+  # Workflow scoring weights
+  scoring:
+    automation_potential: 0.30
+    time_savings: 0.25
+    market_size: 0.20
+    integration_complexity: 0.15  # lower is better
+    competition_gap: 0.10
+
+# Specification generation configuration
+generation:
+  # Prompt generation engine
+  # Options: "dual-mode" (recommended), "prometheus" (legacy v3.3)
+  prompt_engine: "dual-mode"
+
+  # Dual-mode prompt settings
+  dual_mode:
+    # Onboarding mode strictness
+    # "high" = strict state machine, no deviations
+    # "medium" = allows brief tangent answers before redirect
+    # "low" = more flexible (not recommended)
+    onboarding_strictness: "high"
+
+    # Allow tangent answers during onboarding?
+    # If true, agent gives brief 1-2 sentence answer before redirecting
+    # If false, agent refuses to answer off-topic questions
+    allow_tangents: true
+
+    # Consultation mode personality depth
+    # "full" = complete worldview, opinions, personality
+    # "professional" = more neutral, fact-focused
+    # "minimal" = basic helpful assistant
+    personality_depth: "full"
+
+    # Enable intent reading in consultation mode
+    # Allows dynamic adaptation to user intent (exploring, venting, urgent, etc.)
+    intent_reading: true
+
+    # Persona customization level per vertical
+    # "fully_customized" = unique personality per industry (recommended)
+    # "consistent" = same base personality across verticals
+    persona_variation: "fully_customized"
+
+  # Default agent model for generated apps
+  agent_model: "claude-sonnet-4-20250514"
+
+  # A2UI component version
+  a2ui_version: "1.0.0"
+
+  # Tool definition format
+  tool_format: "mcp"  # Model Context Protocol
+
+# Template paths (relative to factory root)
+templates:
+  agent_app: "factory/templates/agent-app"
+  admin_dashboard: "factory/templates/admin-dashboard"
+  client_landing: "factory/templates/client-landing"
+  onboarding_flow: "factory/templates/onboarding-flow.md"
+  vertical_spec: "verticals/_template/VERTICAL.md"
+
+  # Meta-prompt templates for dual-mode generation
+  meta_prompts:
+    master_template: "core/meta-prompts/dual-mode-agent.xml"
+    onboarding_states: "core/meta-prompts/onboarding-states.yaml"
+    personas_dir: "core/meta-prompts/personas"
+
+# Deployment defaults for generated apps
+deployment:
+  hosting: "vercel"
+  database: "supabase"
+  auth: "clerk"
+  payments: "stripe"
+
+  # Environment variables template
+  env_template:
+    - "ANTHROPIC_API_KEY"
+    - "SUPABASE_URL"
+    - "SUPABASE_ANON_KEY"
+    - "CLERK_SECRET_KEY"
+    - "STRIPE_SECRET_KEY"
+
+# Phase workflow settings
+workflow:
+  # Require explicit user approval between phases
+  require_approval: true
+
+  # Phases in order
+  phases:
+    - discovery
+    - specification
+    - build
+    - delivery
+
+  # Save intermediate artifacts to factory repo for reference
+  save_artifacts: true
+  artifacts_dir: "verticals"
+
+# Logging and debugging
+debug:
+  verbose: false
+  log_tool_calls: true
+  save_conversation_history: false

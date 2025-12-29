@@ -1,0 +1,459 @@
+# Onboarding State Machine Patterns
+# =================================
+#
+# This file contains reusable state machine patterns for common onboarding flows.
+# The factory uses these patterns as templates, customizing them for each vertical.
+#
+# Each state has:
+#   - name: Unique identifier for the state
+#   - next: Name of the next state (or "complete" for final)
+#   - message: Template for what the agent says
+#   - component: A2UI component to render (or "none")
+#   - required: Whether data must be collected before advancing
+#   - field_type: Data type for validation (text, select, number, date, file)
+#   - options: For select/buttons, the available choices (uses template vars)
+
+# ============================================
+# BASE PATTERNS (Common to most verticals)
+# ============================================
+
+base_patterns:
+
+  # Welcome state - always first
+  welcome:
+    name: welcome
+    next: "{{FIRST_DATA_STATE}}"
+    message: "{{WELCOME_MESSAGE}}"
+    component: none
+    required: false
+    notes: "Pure greeting, no data collection"
+
+  # Contact info collection
+  contact_info:
+    name: contact_info
+    next: "{{NEXT_STATE}}"
+    message: "Let me get your contact information so we can follow up with you."
+    component:
+      type: InlineChatForm
+      fields:
+        - name: full_name
+          type: text
+          label: "Full Name"
+          required: true
+        - name: email
+          type: email
+          label: "Email Address"
+          required: true
+        - name: phone
+          type: phone
+          label: "Phone Number"
+          required: false
+    required: true
+    field_type: contact
+
+  # Urgency assessment
+  urgency:
+    name: urgency
+    next: "{{NEXT_STATE}}"
+    message: "How urgent is your {{CASE_NOUN}}?"
+    component:
+      type: InlineButtons
+      name: urgency
+      options:
+        - "Not urgent - just exploring"
+        - "Soon - within the next week"
+        - "Urgent - need help today"
+    required: true
+    field_type: select
+
+  # How did you hear about us
+  referral_source:
+    name: referral_source
+    next: "{{NEXT_STATE}}"
+    message: "How did you hear about {{COMPANY_NAME}}?"
+    component:
+      type: InlineSelect
+      name: referral_source
+      options:
+        - "Google search"
+        - "Friend/family referral"
+        - "Social media"
+        - "Advertisement"
+        - "Other"
+    required: false
+    field_type: select
+
+  # Additional notes / free text
+  additional_info:
+    name: additional_info
+    next: "{{NEXT_STATE}}"
+    message: "Is there anything else you'd like us to know about your situation?"
+    component:
+      type: InlineTextarea
+      name: additional_info
+      placeholder: "Share any additional details that might be helpful..."
+      rows: 4
+    required: false
+    field_type: text
+
+  # Completion state - always last
+  complete:
+    name: complete
+    next: consultation_mode
+    message: "{{COMPLETION_MESSAGE}}"
+    component: none
+    required: false
+    action: mark_onboarding_complete
+    notes: "Summarize collected data and transition to consultation mode"
+
+
+# ============================================
+# LEGAL SERVICES PATTERNS
+# ============================================
+
+legal_patterns:
+
+  case_type:
+    name: case_type
+    next: incident_date
+    message: "What type of legal matter are you dealing with?"
+    component:
+      type: InlineButtons
+      name: case_type
+      options: "{{CASE_TYPE_OPTIONS}}"
+    required: true
+    field_type: select
+
+  incident_date:
+    name: incident_date
+    next: injury_severity
+    message: "When did this incident occur?"
+    component:
+      type: InlineSelect
+      name: incident_date
+      options:
+        - "Within the last week"
+        - "1-4 weeks ago"
+        - "1-3 months ago"
+        - "3-12 months ago"
+        - "Over a year ago"
+    required: true
+    field_type: select
+
+  injury_severity:
+    name: injury_severity
+    next: medical_treatment
+    message: "How would you rate the severity of your injuries or damages?"
+    component:
+      type: InlineSlider
+      name: injury_severity
+      min: 1
+      max: 10
+      labels:
+        1: "Minor"
+        5: "Moderate"
+        10: "Severe"
+    required: true
+    field_type: number
+
+  medical_treatment:
+    name: medical_treatment
+    next: insurance_status
+    message: "Have you received medical treatment?"
+    component:
+      type: InlineButtons
+      name: medical_treatment
+      options:
+        - "Yes, currently receiving treatment"
+        - "Yes, treatment completed"
+        - "Not yet, but planning to"
+        - "No treatment needed"
+    required: true
+    field_type: select
+
+  insurance_status:
+    name: insurance_status
+    next: other_attorney
+    message: "Have you filed an insurance claim?"
+    component:
+      type: InlineButtons
+      name: insurance_status
+      options:
+        - "Yes, claim filed"
+        - "No, not yet"
+        - "Not sure if I should"
+    required: true
+    field_type: select
+
+  other_attorney:
+    name: other_attorney
+    next: contact_info
+    message: "Have you spoken with any other attorneys about this matter?"
+    component:
+      type: InlineButtons
+      name: other_attorney
+      options:
+        - "No, this is my first consultation"
+        - "Yes, but not retained anyone"
+        - "Yes, I currently have representation"
+    required: true
+    field_type: select
+
+
+# ============================================
+# SERVICE BUSINESS PATTERNS (Vet, Auto, etc.)
+# ============================================
+
+service_patterns:
+
+  service_type:
+    name: service_type
+    next: schedule_preference
+    message: "What type of service do you need?"
+    component:
+      type: InlineButtons
+      name: service_type
+      options: "{{SERVICE_TYPE_OPTIONS}}"
+    required: true
+    field_type: select
+
+  schedule_preference:
+    name: schedule_preference
+    next: contact_info
+    message: "When would you like to schedule?"
+    component:
+      type: InlineButtons
+      name: schedule_preference
+      options:
+        - "As soon as possible"
+        - "This week"
+        - "Next week"
+        - "Just need a quote first"
+    required: true
+    field_type: select
+
+  pet_info:
+    name: pet_info
+    next: concern_description
+    message: "Tell me about your pet:"
+    component:
+      type: InlineChatForm
+      fields:
+        - name: pet_name
+          type: text
+          label: "Pet's Name"
+          required: true
+        - name: pet_species
+          type: select
+          label: "Type of Pet"
+          options: ["Dog", "Cat", "Bird", "Other"]
+          required: true
+        - name: pet_age
+          type: text
+          label: "Age (approximate)"
+          required: false
+    required: true
+    field_type: pet
+
+  concern_description:
+    name: concern_description
+    next: urgency
+    message: "What's the main concern or reason for your visit?"
+    component:
+      type: InlineTextarea
+      name: concern_description
+      placeholder: "Describe what's going on with your pet..."
+      rows: 3
+    required: true
+    field_type: text
+
+  vehicle_info:
+    name: vehicle_info
+    next: issue_description
+    message: "Tell me about your vehicle:"
+    component:
+      type: InlineChatForm
+      fields:
+        - name: vehicle_year
+          type: number
+          label: "Year"
+          required: true
+        - name: vehicle_make
+          type: text
+          label: "Make"
+          required: true
+        - name: vehicle_model
+          type: text
+          label: "Model"
+          required: true
+        - name: mileage
+          type: number
+          label: "Current Mileage"
+          required: false
+    required: true
+    field_type: vehicle
+
+  issue_description:
+    name: issue_description
+    next: urgency
+    message: "Describe the issue you're experiencing:"
+    component:
+      type: InlineTextarea
+      name: issue_description
+      placeholder: "What's happening? Any warning lights, sounds, or other symptoms?"
+      rows: 3
+    required: true
+    field_type: text
+
+
+# ============================================
+# B2B / CONTRACTOR PATTERNS
+# ============================================
+
+contractor_patterns:
+
+  project_type:
+    name: project_type
+    next: project_scope
+    message: "What type of project is this?"
+    component:
+      type: InlineButtons
+      name: project_type
+      options: "{{PROJECT_TYPE_OPTIONS}}"
+    required: true
+    field_type: select
+
+  project_scope:
+    name: project_scope
+    next: budget_range
+    message: "What's the approximate scope of the project?"
+    component:
+      type: InlineSelect
+      name: project_scope
+      options:
+        - "Small (under $10k)"
+        - "Medium ($10k - $50k)"
+        - "Large ($50k - $250k)"
+        - "Major (over $250k)"
+    required: true
+    field_type: select
+
+  budget_range:
+    name: budget_range
+    next: timeline
+    message: "What's your budget range for this project?"
+    component:
+      type: InlineSelect
+      name: budget_range
+      options: "{{BUDGET_OPTIONS}}"
+    required: true
+    field_type: select
+
+  timeline:
+    name: timeline
+    next: document_upload
+    message: "When do you need this completed?"
+    component:
+      type: InlineButtons
+      name: timeline
+      options:
+        - "ASAP (rush job)"
+        - "Within 30 days"
+        - "1-3 months"
+        - "3-6 months"
+        - "Flexible / planning ahead"
+    required: true
+    field_type: select
+
+  document_upload:
+    name: document_upload
+    next: contact_info
+    message: "Do you have any project documents to share? (Plans, specs, photos)"
+    component:
+      type: InlineFileUpload
+      name: project_documents
+      accept: ".pdf,.doc,.docx,.jpg,.png,.xlsx"
+      maxSize: "25MB"
+      multiple: true
+    required: false
+    field_type: file
+
+
+# ============================================
+# STATE MACHINE COMPOSITION
+# ============================================
+
+# Pre-built flows that can be used as-is or customized
+
+flows:
+
+  personal_injury_intake:
+    description: "Personal injury law firm intake flow"
+    states:
+      - welcome
+      - case_type  # from legal_patterns
+      - incident_date
+      - injury_severity
+      - medical_treatment
+      - insurance_status
+      - other_attorney
+      - contact_info  # from base_patterns
+      - additional_info
+      - complete
+
+  veterinary_appointment:
+    description: "Veterinary clinic appointment booking"
+    states:
+      - welcome
+      - service_type  # from service_patterns
+      - pet_info
+      - concern_description
+      - urgency  # from base_patterns
+      - schedule_preference
+      - contact_info
+      - complete
+
+  auto_repair_intake:
+    description: "Auto repair shop service intake"
+    states:
+      - welcome
+      - service_type
+      - vehicle_info  # from service_patterns
+      - issue_description
+      - urgency
+      - schedule_preference
+      - contact_info
+      - complete
+
+  contractor_rfq:
+    description: "Construction contractor RFQ intake"
+    states:
+      - welcome
+      - project_type  # from contractor_patterns
+      - project_scope
+      - budget_range
+      - timeline
+      - document_upload
+      - contact_info
+      - additional_info
+      - complete
+
+
+# ============================================
+# VALIDATION RULES
+# ============================================
+
+validation:
+  email:
+    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    error: "Please enter a valid email address"
+
+  phone:
+    pattern: "^[\\d\\s\\-\\(\\)\\+]{10,}$"
+    error: "Please enter a valid phone number"
+
+  required:
+    error: "This field is required to continue"
+
+  number_range:
+    error: "Please enter a number between {{min}} and {{max}}"

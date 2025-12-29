@@ -10,16 +10,54 @@ Vertical Agent Factory is Tier 4 Intelligence's internal toolkit for rapidly bui
 
 ## Architecture
 
+### Factory vs Output
+
+The factory repo stays clean - generated agents are output to separate directories:
+
 ```
-Factory Input (industry description)
+THIS REPO (Factory)                      OUTPUT (Generated Apps)
+───────────────────                      ──────────────────────
+core/orchestrator/                       ~/VerticalAgents/
+  ├── factory-agent.py                   ├── personal-injury-law/
+  └── phases/                            │   ├── src/app/
+      ├── discovery.py                   │   │   ├── page.tsx (landing)
+      ├── specification.py               │   │   ├── admin/ (dashboard)
+      ├── scaffold.py                    │   │   └── chat/ (client chat)
+      └── delivery.py                    │   ├── agent/
+                                         │   │   └── tools/
+factory/templates/                       │   └── components/a2ui/
+factory/config/                          │
+verticals/ (specs only)                  └── veterinary-clinic/
+```
+
+### 4-Phase Workflow
+
+```
+/build-agent [vertical]
     ↓
-Research Phase (Claude Agent SDK → VERTICAL.md spec)
+Phase 1: DISCOVERY
+  - Web search for industry data
+  - Cross-reference playbook examples
+  - Present 2-3 workflow options
+  - [APPROVAL GATE]
     ↓
-Persona Generation (Prometheus v3.3 → persona.md)
+Phase 2: SPECIFICATION
+  - Generate VERTICAL.md
+  - Generate persona via Prometheus
+  - Define MCP tools
+  - [APPROVAL GATE]
     ↓
-Scaffold Phase (A2UI components, onboarding flows, tools)
+Phase 3: BUILD
+  - Scaffold Next.js app
+  - Generate A2UI components
+  - Create Supabase migrations
+  - Output to ~/VerticalAgents/
     ↓
-Deploy (Vercel/Railway, Stripe, email integration)
+Phase 4: DELIVERY
+  - Generate Admin Dashboard (3-panel)
+  - Generate Client Landing Page
+  - Wire up complete flow
+  - Deployment configs
 ```
 
 ### Core Systems
@@ -40,7 +78,31 @@ Deploy (Vercel/Railway, Stripe, email integration)
 
 ## Commands
 
-### Create a new vertical
+### Build a Vertical Agent (Recommended)
+
+The fastest way to build a new vertical agent is using the factory slash command:
+
+```
+/build-agent [vertical description]
+```
+
+**Examples:**
+```
+/build-agent personal injury law firm
+/build-agent veterinary clinic
+/build-agent construction contractor RFQ processing
+/build-agent auto repair shop scheduling
+```
+
+This triggers the full 4-phase factory workflow:
+1. **Discovery**: Research market, identify workflows, get approval
+2. **Specification**: Generate VERTICAL.md, persona, tools, get approval
+3. **Build**: Scaffold complete Next.js app to output directory
+4. **Delivery**: Generate admin dashboard + client landing page
+
+Output is saved to `~/VerticalAgents/[vertical-slug]/` (configurable in `factory/config/factory.config.yaml`).
+
+### Manual Vertical Creation
 ```bash
 # From template
 python tools/new-vertical.py --name "veterinary clinics"
