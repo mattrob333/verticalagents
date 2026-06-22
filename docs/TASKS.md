@@ -2,11 +2,11 @@
 
 ## Phase 1: Foundation — Make It Work
 
-- [ ] **1.1** Inspect `agents/construction-rfq/src/agent/` — what code actually exists?
-- [ ] **1.2** Add `.gitignore` (Python + Node)
-- [ ] **1.3** Add `pyproject.toml` with pytest, mypy, ruff
-- [ ] **1.4** Add `requirements.txt` from discovered imports
-- [ ] **1.5** Get first `pytest` passing (can be trivial)
+- [x] **1.1** Inspect `agents/construction-rfq/src/agent/` — what code actually exists? (persona.xml + system-prompt.md only — spec, not runtime)
+- [x] **1.2** Add `.gitignore` (Python + Node)
+- [x] **1.3** Add `pyproject.toml` with pytest, mypy, ruff
+- [x] **1.4** Add `requirements.txt` from discovered imports
+- [x] **1.5** Get first `pytest` passing (5 smoke tests)
 - [ ] **1.6** Design Hermes agent profile template (`hermes-profiles/_template/`)
 - [ ] **1.7** Adapt `prompt_generator.py` to output Hermes-compatible system prompts
 - [ ] **1.8** Adapt `scaffold.py` to output Hermes profile directory structure

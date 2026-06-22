@@ -11,26 +11,21 @@ The OUTER loop appends prioritized directives here when it detects drift, guardr
 
 ## Open Corrections
 
-### [HIGH] No quality gate exists — OPEN (Phase 0 audit)
-**Problem:** The repo has no tests, no type checking, no lint configuration, no requirements.txt. The builder needs a quality gate to commit against, but there's nothing to run.
-**Required fix:** Add a basic Python quality gate: pyproject.toml with pytest, mypy, ruff config + a requirements.txt capturing existing imports (claude_agent_sdk, pyyaml, anthropic, etc.). Do NOT refactor code — just add the infrastructure so subsequent ticks can run checks.
-**Acceptance:** `pytest --version`, `mypy --version`, `ruff --version` all work, and running `mypy core/orchestrator/` at least identifies existing issues without crashing.
+_(none — all Phase 0 audit corrections resolved)_
 
-### [HIGH] No requirements.txt — OPEN (Phase 0 audit)
-**Problem:** Python dependencies (claude_agent_sdk, pyyaml, anthropic, firecrawl) are scattered across imports with no lockfile. New builders and CI can't install deps.
-**Required fix:** Generate a `pyproject.toml` or `requirements.txt` from the existing imports discovered in Python files. Pin reasonable versions. Do NOT change any code.
-**Acceptance:** `pip install -r requirements.txt` installs without errors.
+---
+
+## Resolved Corrections
+
+### [HIGH] No quality gate exists — RESOLVED (55c5757)
+**Fix:** Added `pyproject.toml` with pytest/mypy/ruff config (lenient legacy baseline), `tests/test_smoke.py` (5 passing smoke tests). All three tools functional: `pytest --version`, `mypy --version`, `ruff --version` work. `mypy core/orchestrator/` identifies 6 pre-existing issues without crashing. Legacy code not refactored per directive.
+
+### [HIGH] No requirements.txt — RESOLVED (55c5757)
+**Fix:** AST import analysis showed only `PyYAML` is actually imported at top level (claude_agent_sdk/anthropic/firecrawl appear only in string literals and docs). Added `requirements.txt` with PyYAML>=6.0,<7.0 and dev deps in `pyproject.toml [project.optional-dependencies.dev]`. `uv pip install -e ".[dev]"` succeeds.
 
 ### [MEDIUM] Inspect agents/construction-rfq/src/agent/ — RESOLVED (audit)
 **Finding:** Contains `persona.xml` (9.3K — full BidPro persona with worldview, expertise, conversational style, quirks, flexibility) and `system-prompt.md` (6.9K — complete RFQ agent system prompt with workflow, tools, escalation triggers). This is a **spec/persona design** — NOT a running agent. No executable code, no Next.js app, no deployed runtime.
 **Implication:** The port to Hermes means converting persona.xml → Hermes skill file, and system-prompt.md → Hermes system prompt + MCP tool config. The factory's specification phase is producing the right artifacts — the output format just needs to change from Claude SDK to Hermes profile.
 
-### [LOW] .gitignore missing — OPEN (Phase 0 audit)
-**Problem:** No .gitignore at repo root. Generated artifacts and __pycache__ could get committed.
-**Required fix:** Add a standard Python+Node .gitignore.
-**Acceptance:** `__pycache__/`, `.env`, `node_modules/`, `.venv/` are all ignored.
-
----
-
-## Resolved Corrections
-_(none yet — first audit)_
+### [LOW] .gitignore missing — RESOLVED (55c5757)
+**Fix:** Added standard Python+Node `.gitignore` covering `__pycache__/`, `.env`, `node_modules/`, `.venv/`, `.mypy_cache/`, `.ruff_cache/`, `.pytest_cache/`, and generated agent output dirs.

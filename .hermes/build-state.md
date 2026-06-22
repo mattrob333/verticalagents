@@ -3,7 +3,7 @@
 **Spec source:** README.md, PLAYBOOK.md, CLAUDE.md
 **Repo:** https://github.com/mattrob333/verticalagents
 **Workspace:** ~/verticalagents
-**Status:** 🏗️ Phase 0 reconnaissance complete — planning modernization
+**Status:** 🏗️ Phase 1 in progress — quality gate established, next: Hermes profile template
 
 ## Architecture: Two-Tier Build Loop
 - Inner Loop (cron TBD) — every 10m: Check → Test → Advance → Repeat. Self-pauses both crons at a genuine stopping point.
@@ -79,7 +79,7 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 - [ ] Port construction-rfq as first Hermes vertical agent proof-of-concept
 - [ ] Create agent profile template with skills/, config.yaml, mcp-config.yaml
 - [ ] Get the dual-mode persona system exporting Hermes-compatible prompts
-- [ ] Set up quality gate (Python tests, type checks)
+- [x] Set up quality gate (Python tests, type checks) — pytest 5 passing, mypy+ruff functional
 - [x] Reconnaissance complete
 
 ### Phase 2: Self-Building Factory
@@ -104,18 +104,17 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 - [x] Creative vision documented
 
 ## Open Issues / Blockers
-- No tests anywhere (need to add) → HIGH priority
-- Python package dependencies not captured (no requirements.txt) → MEDIUM
-- construction-rfq agent app needs inspection (unknown if code or stub) → MEDIUM
-- No quality gate exists yet → HIGH (need to define one)
+- Pre-existing ruff/mypy issues in legacy code (162 ruff, 6 mypy) — baseline, will be addressed during port
 
 ## Next Action
-- **Inspect agents/construction-rfq/src/agent/ for actual code**, assess its state, and port it as the first Hermes vertical agent profile proof-of-concept
+- **Task 1.6: Design the Hermes agent profile template** at `hermes-profiles/_template/` — the output format the factory will generate. Include `skills/`, `config.yaml`, `mcp-config.yaml`, `system-prompt.md`, `gateway.yaml`. This is the target structure that tasks 1.7–1.10 will produce.
 
-## Quality Gate (to be established)
-- `pytest` for Python tests (TBD)
-- `mypy` for type checking (TBD)
-- `ruff` for linting (TBD)
+## Quality Gate (established)
+- `pytest` — 5 smoke tests passing (`tests/test_smoke.py`)
+- `mypy` — functional, 6 pre-existing issues in core/orchestrator/ (legacy, not refactored)
+- `ruff` — functional, 162 pre-existing issues (legacy code with embedded Next.js strings)
+- Run: `. .venv/bin/activate && pytest && ruff check . && mypy core/orchestrator/`
+- venv: `.venv/` (uv-managed), install: `uv pip install -e ".[dev]"`
 
 ## Pitfalls / Notes for Future Ticks
 - The CLI tool `new-vertical.py` has full scaffolding logic — don't rewrite, adapt
@@ -123,4 +122,4 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 - The factory config YAML is excellent — make Hermes-aware
 - Commit each green slice before starting the next file
 
-**Last Updated:** 2026-06-22 — Phase 0 reconnaissance complete, vision defined
+**Last Updated:** 2026-06-22 — Phase 1 quality gate established (commit 55c5757), all open corrections resolved
