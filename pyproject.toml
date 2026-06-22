@@ -43,6 +43,7 @@ addopts = [
 markers = [
     "smoke: minimal sanity checks",
     "unit: unit tests",
+    "integration: end-to-end profile build tests",
 ]
 
 # ---------------------------------------------------------------------------

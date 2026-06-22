@@ -10,7 +10,7 @@
 - [x] **1.6** Design Hermes agent profile template (`hermes-profiles/_template/`)
 - [x] **1.7** Adapt `prompt_generator.py` to output Hermes-compatible system prompts
 - [x] **1.8** Adapt `scaffold.py` to output Hermes profile directory structure
-- [ ] **1.9** Adapt `delivery.py` to output gateway configs + deployment manifests
+- [x] **1.9** Adapt `delivery.py` to output gateway configs + deployment manifests
 - [ ] **1.10** Build first vertical Hermes profile as proof-of-concept (construction-rfq)
 - [ ] **1.11** Test the profile can be loaded by Hermes CLI
 - [ ] **1.12** Update README with Hermes Vertical Forge branding
