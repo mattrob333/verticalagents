@@ -11,12 +11,11 @@ Assembles complete agent system prompts from:
 Output: A complete system prompt ready to deploy with the generated agent.
 """
 
-import os
-import re
-import yaml
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+import yaml
 
 
 @dataclass
@@ -25,10 +24,10 @@ class OnboardingState:
     name: str
     next: str
     message: str
-    component: Optional[Dict[str, Any]] = None
+    component: dict[str, Any] | None = None
     required: bool = False
     field_type: str = "text"
-    options: Optional[List[str]] = None
+    options: list[str] | None = None
 
 
 @dataclass
@@ -36,10 +35,10 @@ class PersonaConfig:
     """Configuration for an agent persona"""
     name: str
     essence: str
-    worldview: Dict[str, Any]
-    expertise: Dict[str, Any]
-    conversational_style: Dict[str, Any]
-    flexibility: Dict[str, Any]
+    worldview: dict[str, Any]
+    expertise: dict[str, Any]
+    conversational_style: dict[str, Any]
+    flexibility: dict[str, Any]
 
 
 @dataclass
@@ -49,11 +48,11 @@ class PromptConfig:
     vertical_slug: str
     agent_name: str
     company_name: str = "{{COMPANY_NAME}}"  # Runtime variable
-    persona: Optional[PersonaConfig] = None
-    onboarding_states: List[OnboardingState] = field(default_factory=list)
-    tools: List[Dict[str, Any]] = field(default_factory=list)
-    escalation_triggers: List[str] = field(default_factory=list)
-    custom_variables: Dict[str, str] = field(default_factory=dict)
+    persona: PersonaConfig | None = None
+    onboarding_states: list[OnboardingState] = field(default_factory=list)
+    tools: list[dict[str, Any]] = field(default_factory=list)
+    escalation_triggers: list[str] = field(default_factory=list)
+    custom_variables: dict[str, str] = field(default_factory=dict)
 
 
 class DualModePromptGenerator:
@@ -68,7 +67,7 @@ class DualModePromptGenerator:
     5. Outputs a complete system prompt
     """
 
-    def __init__(self, factory_root: Optional[Path] = None):
+    def __init__(self, factory_root: Path | None = None):
         """
         Initialize the generator.
 
@@ -98,12 +97,12 @@ class DualModePromptGenerator:
 
         # Load state patterns
         if self.states_path.exists():
-            with open(self.states_path, 'r', encoding='utf-8') as f:
+            with open(self.states_path, encoding='utf-8') as f:
                 self.state_patterns = yaml.safe_load(f)
         else:
             self.state_patterns = {}
 
-    def load_persona(self, vertical_slug: str) -> Optional[PersonaConfig]:
+    def load_persona(self, vertical_slug: str) -> PersonaConfig | None:
         """
         Load industry-specific persona from YAML file.
 
@@ -118,7 +117,7 @@ class DualModePromptGenerator:
         if not persona_path.exists():
             return None
 
-        with open(persona_path, 'r', encoding='utf-8') as f:
+        with open(persona_path, encoding='utf-8') as f:
             data = yaml.safe_load(f)
 
         persona_data = data.get("persona", {})
@@ -135,8 +134,8 @@ class DualModePromptGenerator:
     def build_onboarding_states(
         self,
         flow_name: str,
-        custom_options: Optional[Dict[str, List[str]]] = None
-    ) -> List[OnboardingState]:
+        custom_options: dict[str, list[str]] | None = None
+    ) -> list[OnboardingState]:
         """
         Build onboarding states from a predefined flow pattern.
 
@@ -196,7 +195,7 @@ class DualModePromptGenerator:
 
         return states
 
-    def _render_onboarding_states_xml(self, states: List[OnboardingState]) -> str:
+    def _render_onboarding_states_xml(self, states: list[OnboardingState]) -> str:
         """
         Render onboarding states as XML for injection into the template.
 
@@ -324,7 +323,7 @@ class DualModePromptGenerator:
 
         return '\n      '.join(lines)
 
-    def _render_tools(self, tools: List[Dict[str, Any]]) -> str:
+    def _render_tools(self, tools: list[dict[str, Any]]) -> str:
         """Render MCP tool definitions"""
         if not tools:
             return "<!-- No tools defined -->"
@@ -350,7 +349,7 @@ class DualModePromptGenerator:
 
         return '\n    '.join(lines)
 
-    def _render_escalation_triggers(self, triggers: List[str]) -> str:
+    def _render_escalation_triggers(self, triggers: list[str]) -> str:
         """Render escalation triggers"""
         lines = ['<vertical_triggers>']
         for trigger in triggers:
@@ -425,8 +424,8 @@ class DualModePromptGenerator:
         self,
         vertical_slug: str,
         company_name: str = "{{COMPANY_NAME}}",
-        tools: Optional[List[Dict[str, Any]]] = None,
-        custom_options: Optional[Dict[str, Any]] = None
+        tools: list[dict[str, Any]] | None = None,
+        custom_options: dict[str, Any] | None = None
     ) -> str:
         """
         High-level method to generate a prompt for a known vertical.
@@ -462,7 +461,7 @@ class DualModePromptGenerator:
         persona_path = self.personas_dir / f"{vertical_slug}.yaml"
         escalation_triggers = []
         if persona_path.exists():
-            with open(persona_path, 'r', encoding='utf-8') as f:
+            with open(persona_path, encoding='utf-8') as f:
                 data = yaml.safe_load(f)
                 escalation_triggers = data.get("escalation", {}).get("triggers", [])
 

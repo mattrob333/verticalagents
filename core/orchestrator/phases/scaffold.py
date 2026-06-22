@@ -13,7 +13,7 @@ This phase:
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from factory.generators.prompt_generator import (
     DualModePromptGenerator,
@@ -25,11 +25,11 @@ from factory.generators.prompt_generator import (
 class ScaffoldResult:
     """Result of the scaffold phase"""
     output_path: str
-    files_created: List[str]
-    dependencies: Dict[str, str]
-    env_vars_needed: List[str]
+    files_created: list[str]
+    dependencies: dict[str, str]
+    env_vars_needed: list[str]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "output_path": self.output_path,
             "files_created": self.files_created,
@@ -42,10 +42,10 @@ class ScaffoldResult:
 class HermesProfileResult:
     """Result of Hermes profile scaffolding."""
     output_path: str
-    files_created: List[str]
+    files_created: list[str]
     profile_slug: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "output_path": self.output_path,
             "files_created": self.files_created,
@@ -69,7 +69,7 @@ class ScaffoldPhase:
         self,
         vertical_name: str,
         vertical_slug: str,
-        specification: Dict[str, Any],
+        specification: dict[str, Any],
         output_path: str
     ) -> str:
         """
@@ -165,7 +165,7 @@ class ScaffoldPhase:
         self,
         output_dir: Path,
         persona: str,
-        tools: List[Dict[str, Any]]
+        tools: list[dict[str, Any]]
     ) -> None:
         """Inject agent persona and tool definitions"""
 
@@ -728,7 +728,7 @@ export { InlineFileUpload } from "./InlineFileUpload";
         output_dir: Path,
         vertical_name: str,
         vertical_slug: str,
-        specification: Dict[str, Any]
+        specification: dict[str, Any]
     ) -> None:
         """Generate app pages - to be implemented in delivery phase"""
         # Placeholder - actual pages generated in delivery phase
@@ -737,7 +737,7 @@ export { InlineFileUpload } from "./InlineFileUpload";
     async def _generate_api_routes(
         self,
         output_dir: Path,
-        specification: Dict[str, Any]
+        specification: dict[str, Any]
     ) -> None:
         """Generate API routes - to be implemented in delivery phase"""
         # Placeholder - actual routes generated in delivery phase
@@ -1038,7 +1038,7 @@ npx vercel
         return self.factory_root / "hermes-profiles" / "_template"
 
     def _substitute_template_vars(
-        self, content: str, substitutions: Dict[str, str]
+        self, content: str, substitutions: dict[str, str]
     ) -> str:
         """Replace {{var}} placeholders in template content.
 
@@ -1062,9 +1062,9 @@ npx vercel
         self,
         vertical_name: str,
         vertical_slug: str,
-        specification: Dict[str, Any],
+        specification: dict[str, Any],
         prompt_config: PromptConfig,
-        output_root: Optional[str] = None,
+        output_root: str | None = None,
     ) -> HermesProfileResult:
         """Scaffold a complete Hermes agent profile directory.
 
@@ -1107,13 +1107,13 @@ npx vercel
         (profile_dir / "cron").mkdir(parents=True, exist_ok=True)
         (profile_dir / "migrations").mkdir(parents=True, exist_ok=True)
 
-        files_created: List[str] = []
+        files_created: list[str] = []
 
         # Build substitutions for template files
         model_config = specification.get("model", {})
 
         # Build-time substitutions (resolved during scaffolding)
-        build_subs: Dict[str, str] = {
+        build_subs: dict[str, str] = {
             "vertical_name": vertical_name,
             "vertical_slug": vertical_slug,
             "agent_name": prompt_config.agent_name,

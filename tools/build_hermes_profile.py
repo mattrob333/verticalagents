@@ -329,7 +329,7 @@ def build_profile(vertical_slug: str, output_root: str | None = None) -> str:
         vertical_name=vertical_name,
         vertical_slug=vertical_slug,
     )
-    print(f"✅ Generated deployment files:")
+    print("✅ Generated deployment files:")
     for f in deployment_result.files_created:
         print(f"   → {f}")
 

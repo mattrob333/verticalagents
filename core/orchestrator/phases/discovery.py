@@ -8,10 +8,9 @@ This phase:
 4. Presents findings for user approval
 """
 
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -21,10 +20,10 @@ class WorkflowOption:
     description: str
     automation_potential: float  # 0-100
     time_savings: str  # e.g., "15 hrs/week"
-    integration_requirements: List[str]
+    integration_requirements: list[str]
     recommended: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "description": self.description,
@@ -41,11 +40,11 @@ class MarketData:
     smb_count: str
     avg_revenue: str
     tech_adoption: str  # Low, Medium, High
-    key_pain_points: List[str]
-    existing_solutions: List[Dict[str, str]]
+    key_pain_points: list[str]
+    existing_solutions: list[dict[str, str]]
     pricing_benchmark: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "smb_count": self.smb_count,
             "avg_revenue": self.avg_revenue,
@@ -72,7 +71,7 @@ class DiscoveryPhase:
         self,
         vertical_name: str,
         vertical_slug: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Execute the discovery phase.
 
@@ -113,7 +112,7 @@ class DiscoveryPhase:
 
         return report
 
-    def _check_existing_playbooks(self, vertical_slug: str) -> Optional[Dict[str, Any]]:
+    def _check_existing_playbooks(self, vertical_slug: str) -> dict[str, Any] | None:
         """Check if we have an existing playbook for this vertical"""
         # Check verticals directory
         verticals_dir = self.factory_root / "verticals"
@@ -169,8 +168,8 @@ class DiscoveryPhase:
         self,
         vertical_name: str,
         market_data: MarketData,
-        playbook_data: Optional[Dict[str, Any]]
-    ) -> List[WorkflowOption]:
+        playbook_data: dict[str, Any] | None
+    ) -> list[WorkflowOption]:
         """
         Identify potential workflows to automate.
 
@@ -206,9 +205,9 @@ class DiscoveryPhase:
 
     def _calculate_pricing(
         self,
-        workflows: List[WorkflowOption],
+        workflows: list[WorkflowOption],
         market_data: MarketData
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate pricing recommendation based on value delivered"""
         return {
             "base_monthly": "[Calculate: Based on time saved x hourly rate]",
@@ -223,7 +222,7 @@ class DiscoveryPhase:
 
     def _calculate_confidence(
         self,
-        playbook_data: Optional[Dict[str, Any]],
+        playbook_data: dict[str, Any] | None,
         market_data: MarketData
     ) -> str:
         """Calculate confidence level for this vertical"""

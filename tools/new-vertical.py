@@ -9,11 +9,10 @@ Usage:
 """
 
 import argparse
-import os
-import shutil
-from pathlib import Path
-from datetime import date
 import re
+import shutil
+from datetime import date
+from pathlib import Path
 
 # Paths
 REPO_ROOT = Path(__file__).parent.parent
@@ -48,7 +47,7 @@ def create_vertical(name: str, clone_from: str = None, discover: bool = False):
         print(f"📋 Cloning from {clone_from}...")
     else:
         source_dir = TEMPLATE_DIR
-        print(f"📝 Creating from template...")
+        print("📝 Creating from template...")
     
     # Copy directory
     shutil.copytree(source_dir, target_dir)
@@ -85,11 +84,11 @@ def create_vertical(name: str, clone_from: str = None, discover: bool = False):
     print()
     print("📁 Structure created:")
     print(f"   {target_dir}/")
-    print(f"   ├── VERTICAL.md          # Fill this out first")
-    print(f"   ├── persona.md           # Generate with Prometheus")
-    print(f"   ├── onboarding/          # Intake flow definitions")
-    print(f"   ├── integrations/        # Tool configs")
-    print(f"   └── marketing/           # Landing page, pitch deck")
+    print("   ├── VERTICAL.md          # Fill this out first")
+    print("   ├── persona.md           # Generate with Prometheus")
+    print("   ├── onboarding/          # Intake flow definitions")
+    print("   ├── integrations/        # Tool configs")
+    print("   └── marketing/           # Landing page, pitch deck")
     print()
     
     if discover:

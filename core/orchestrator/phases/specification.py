@@ -9,12 +9,11 @@ This phase:
 5. Saves artifacts to verticals/[slug]/
 """
 
-import os
 import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
+from typing import Any
 
 # Add factory directory to path for imports
 factory_root = Path(__file__).parent.parent.parent.parent
@@ -22,9 +21,9 @@ sys.path.insert(0, str(factory_root))
 
 from factory.generators.prompt_generator import (
     DualModePromptGenerator,
-    PromptConfig,
+    OnboardingState,
     PersonaConfig,
-    OnboardingState
+    PromptConfig,
 )
 
 
@@ -33,10 +32,10 @@ class ToolDefinition:
     """MCP-format tool definition"""
     name: str
     description: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     returns: str
 
-    def to_mcp(self) -> Dict[str, Any]:
+    def to_mcp(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "description": self.description,
@@ -51,10 +50,10 @@ class OnboardingStep:
     id: str
     title: str
     description: str
-    fields: List[Dict[str, Any]]
-    validation: Optional[Dict[str, Any]] = None
+    fields: list[dict[str, Any]]
+    validation: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "title": self.title,
@@ -81,8 +80,8 @@ class SpecificationPhase:
         vertical_name: str,
         vertical_slug: str,
         workflow: str,
-        discovery_report: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        discovery_report: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Execute the specification phase.
 
@@ -154,16 +153,16 @@ class SpecificationPhase:
         vertical_name: str,
         vertical_slug: str,
         workflow: str,
-        discovery: Dict[str, Any]
+        discovery: dict[str, Any]
     ) -> str:
         """Generate VERTICAL.md specification"""
 
         # Load template
         template_path = self.factory_root / "verticals" / "_template" / "VERTICAL.md"
         if template_path.exists():
-            template = template_path.read_text()
+            template = template_path.read_text()  # noqa: F841 - legacy: loaded for future use
         else:
-            template = self._get_default_template()
+            template = self._get_default_template()  # noqa: F841 - legacy: loaded for future use
 
         # This will be populated by Claude during the conversation
         # The template provides structure, Claude fills in the content
@@ -260,8 +259,8 @@ This agent [one sentence description].
         vertical_name: str,
         vertical_slug: str,
         workflow: str,
-        discovery: Dict[str, Any],
-        tools: Optional[List[ToolDefinition]] = None
+        discovery: dict[str, Any],
+        tools: list[ToolDefinition] | None = None
     ) -> str:
         """
         Generate dual-mode agent system prompt.
@@ -293,7 +292,7 @@ This agent [one sentence description].
                     tools=tool_defs
                 )
                 return system_prompt
-            except Exception as e:
+            except Exception:
                 # Fall back to custom generation if persona generation fails
                 pass
 
@@ -336,7 +335,7 @@ This agent [one sentence description].
         vertical_name: str,
         vertical_slug: str,
         workflow: str,
-        discovery: Dict[str, Any]
+        discovery: dict[str, Any]
     ) -> PersonaConfig:
         """
         Generate a custom persona configuration for verticals without
@@ -346,10 +345,10 @@ This agent [one sentence description].
         """
         # Extract industry context from discovery
         market_data = discovery.get('market_data', {})
-        pain_points = market_data.get('key_pain_points', [])
+        pain_points = market_data.get('key_pain_points', [])  # noqa: F841 - legacy: context for future expansion
 
         # Build persona based on workflow type
-        workflow_lower = workflow.lower()
+        workflow_lower = workflow.lower()  # noqa: F841 - legacy: context for future expansion
 
         # Determine appropriate tone/style based on industry
         if any(term in vertical_slug for term in ['law', 'legal', 'attorney']):
@@ -433,8 +432,8 @@ This agent [one sentence description].
     def _build_custom_onboarding_states(
         self,
         workflow: str,
-        discovery: Dict[str, Any]
-    ) -> List[OnboardingState]:
+        discovery: dict[str, Any]
+    ) -> list[OnboardingState]:
         """
         Build custom onboarding states for workflows without pre-built flows.
 
@@ -512,8 +511,8 @@ This agent [one sentence description].
     def _get_escalation_triggers(
         self,
         vertical_slug: str,
-        discovery: Dict[str, Any]
-    ) -> List[str]:
+        discovery: dict[str, Any]
+    ) -> list[str]:
         """Get escalation triggers based on vertical type"""
 
         # Common triggers for all verticals
@@ -550,8 +549,8 @@ This agent [one sentence description].
     async def _define_tools(
         self,
         workflow: str,
-        discovery: Dict[str, Any]
-    ) -> List[ToolDefinition]:
+        discovery: dict[str, Any]
+    ) -> list[ToolDefinition]:
         """Define MCP-format tools for the agent"""
 
         # Common tools all agents need
@@ -620,8 +619,8 @@ This agent [one sentence description].
         self,
         vertical_name: str,
         workflow: str,
-        tools: List[ToolDefinition]
-    ) -> List[OnboardingStep]:
+        tools: list[ToolDefinition]
+    ) -> list[OnboardingStep]:
         """Create onboarding flow for end-user data collection"""
 
         # Standard 5-step onboarding structure
@@ -730,11 +729,12 @@ This agent [one sentence description].
         vertical_slug: str,
         vertical_spec: str,
         system_prompt: str,
-        tools: List[ToolDefinition],
-        onboarding: List[OnboardingStep]
+        tools: list[ToolDefinition],
+        onboarding: list[OnboardingStep]
     ) -> None:
         """Save generated artifacts to the factory repo for reference"""
         import json
+
         import yaml
 
         artifacts_dir = self.factory_root / "verticals" / vertical_slug
@@ -761,7 +761,7 @@ This agent [one sentence description].
             encoding="utf-8"
         )
 
-    def _format_market_data(self, market_data: Dict[str, Any]) -> str:
+    def _format_market_data(self, market_data: dict[str, Any]) -> str:
         """Format market data for VERTICAL.md"""
         if not market_data:
             return "[To be filled based on discovery research]"
@@ -772,14 +772,14 @@ This agent [one sentence description].
 - **Tech Adoption**: {market_data.get('tech_adoption', '[Research needed]')}
 """
 
-    def _format_pain_points(self, pain_points: List[str]) -> str:
+    def _format_pain_points(self, pain_points: list[str]) -> str:
         """Format pain points as numbered list"""
         if not pain_points:
             return "1. [Pain point 1]\n2. [Pain point 2]\n3. [Pain point 3]"
 
         return "\n".join(f"{i+1}. {p}" for i, p in enumerate(pain_points))
 
-    def _format_pricing(self, pricing: Dict[str, Any]) -> str:
+    def _format_pricing(self, pricing: dict[str, Any]) -> str:
         """Format pricing recommendation"""
         if not pricing:
             return "**Base Price:** $[X]/year\n\n**Justification:** [ROI calculation]"
@@ -803,7 +803,7 @@ This agent [one sentence description].
 {tiers_text}
 """
 
-    def _format_competition(self, solutions: List[Dict[str, str]]) -> str:
+    def _format_competition(self, solutions: list[dict[str, str]]) -> str:
         """Format competition analysis"""
         if not solutions:
             return "| Competitor | Price | Gap |\n|------------|-------|-----|\n| [Competitor 1] | $[X] | [Gap] |"

@@ -20,19 +20,21 @@ Usage:
     python core/orchestrator/factory-agent.py --vertical "personal injury law"
 """
 
-import os
-import yaml
 import argparse
-from pathlib import Path
-from typing import Optional, Dict, Any, Generator
+import os
+from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
+from typing import Any
+
+import yaml
+from phases.delivery import DeliveryPhase
 
 # Phase imports
 from phases.discovery import DiscoveryPhase
-from phases.specification import SpecificationPhase
 from phases.scaffold import ScaffoldPhase
-from phases.delivery import DeliveryPhase
+from phases.specification import SpecificationPhase
 
 
 class WorkflowPhase(Enum):
@@ -56,14 +58,14 @@ class FactoryConfig:
     artifacts_dir: str
 
     @classmethod
-    def load(cls, config_path: Optional[str] = None) -> "FactoryConfig":
+    def load(cls, config_path: str | None = None) -> "FactoryConfig":
         """Load configuration from YAML file"""
         if config_path is None:
             # Default to factory/config/factory.config.yaml
             factory_root = Path(__file__).parent.parent.parent
             config_path = factory_root / "factory" / "config" / "factory.config.yaml"
 
-        with open(config_path, 'r') as f:
+        with open(config_path) as f:
             config = yaml.safe_load(f)
 
         return cls(
@@ -83,12 +85,12 @@ class FactoryState:
     vertical_name: str
     vertical_slug: str
     current_phase: WorkflowPhase
-    discovery_report: Optional[Dict[str, Any]] = None
-    selected_workflow: Optional[str] = None
-    specification: Optional[Dict[str, Any]] = None
-    output_path: Optional[str] = None
+    discovery_report: dict[str, Any] | None = None
+    selected_workflow: str | None = None
+    specification: dict[str, Any] | None = None
+    output_path: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "vertical_name": self.vertical_name,
             "vertical_slug": self.vertical_slug,
@@ -107,9 +109,9 @@ class VerticalAgentFactory:
     between phases for approval gates.
     """
 
-    def __init__(self, config: Optional[FactoryConfig] = None):
+    def __init__(self, config: FactoryConfig | None = None):
         self.config = config or FactoryConfig.load()
-        self.state: Optional[FactoryState] = None
+        self.state: FactoryState | None = None
 
         # Initialize phase handlers
         self.phases = {
@@ -127,7 +129,7 @@ class VerticalAgentFactory:
         slug = re.sub(r'[-\s]+', '-', slug)
         return slug
 
-    def start(self, vertical_name: str, output_dir: Optional[str] = None) -> FactoryState:
+    def start(self, vertical_name: str, output_dir: str | None = None) -> FactoryState:
         """
         Start the factory workflow for a new vertical.
 
@@ -149,7 +151,7 @@ class VerticalAgentFactory:
         )
         return self.state
 
-    async def run_discovery(self) -> Dict[str, Any]:
+    async def run_discovery(self) -> dict[str, Any]:
         """
         Run the discovery phase.
 
@@ -185,7 +187,7 @@ class VerticalAgentFactory:
         self.state.current_phase = WorkflowPhase.SPECIFICATION
         return True
 
-    async def run_specification(self) -> Dict[str, Any]:
+    async def run_specification(self) -> dict[str, Any]:
         """
         Run the specification phase.
 
@@ -240,7 +242,7 @@ class VerticalAgentFactory:
         self.state.current_phase = WorkflowPhase.DELIVERY
         return output_path
 
-    async def run_delivery(self) -> Dict[str, Any]:
+    async def run_delivery(self) -> dict[str, Any]:
         """
         Run the delivery phase - generate dashboards and landing pages.
 
@@ -264,9 +266,9 @@ class VerticalAgentFactory:
     async def run_full_workflow(
         self,
         vertical_name: str,
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
         auto_approve: bool = False
-    ) -> Generator[Dict[str, Any], str, Dict[str, Any]]:
+    ) -> Generator[dict[str, Any], str, dict[str, Any]]:
         """
         Run the complete factory workflow with approval gates.
 
@@ -438,7 +440,7 @@ def main():
     # Create factory and run
     factory = VerticalAgentFactory()
 
-    print(f"\n🏭 Vertical Agent Factory")
+    print("\n🏭 Vertical Agent Factory")
     print(f"Building agent for: {args.vertical}")
     print(f"Output directory: {args.output_dir or factory.config.output_dir}")
     print("-" * 50)

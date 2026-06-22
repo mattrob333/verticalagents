@@ -8,10 +8,10 @@ Each phase is responsible for a specific part of the agent building workflow:
 - Delivery: Generate dashboards and landing pages
 """
 
-from .discovery import DiscoveryPhase
-from .specification import SpecificationPhase
-from .scaffold import ScaffoldPhase
 from .delivery import DeliveryPhase
+from .discovery import DiscoveryPhase
+from .scaffold import ScaffoldPhase
+from .specification import SpecificationPhase
 
 __all__ = [
     "DiscoveryPhase",

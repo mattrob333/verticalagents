@@ -8,9 +8,9 @@ This phase:
 4. Creates marketing assets and deployment configuration
 """
 
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 @dataclass
@@ -20,24 +20,24 @@ class DashboardPanel:
     title: str
     icon: str
     description: str
-    components: List[str]
+    components: list[str]
 
 
 @dataclass
 class LandingSection:
     """Configuration for a landing page section"""
     type: str  # hero, features, testimonials, cta, faq
-    content: Dict[str, Any]
+    content: dict[str, Any]
 
 
 @dataclass
 class HermesDeploymentResult:
     """Result of Hermes deployment generation."""
     profile_path: str
-    files_created: List[str]
+    files_created: list[str]
     vertical_slug: str
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "profile_path": self.profile_path,
             "files_created": self.files_created,
@@ -62,8 +62,8 @@ class DeliveryPhase:
         output_dir: Path,
         vertical_name: str,
         vertical_slug: str,
-        spec_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        spec_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Execute the delivery phase.
 
@@ -121,8 +121,8 @@ class DeliveryPhase:
         self,
         output_dir: Path,
         vertical_name: str,
-        spec_data: Dict[str, Any]
-    ) -> List[str]:
+        spec_data: dict[str, Any]
+    ) -> list[str]:
         """Generate NotebookLM-style 3-panel admin dashboard"""
         files_created = []
         admin_dir = output_dir / "src" / "app" / "admin"
@@ -132,96 +132,96 @@ class DeliveryPhase:
         components_dir.mkdir(parents=True, exist_ok=True)
 
         # Dashboard shell component
-        dashboard_shell = f'''// Admin Dashboard Shell - NotebookLM-style 3-panel layout
+        dashboard_shell = '''// Admin Dashboard Shell - NotebookLM-style 3-panel layout
 "use client";
 
-import {{ useState }} from "react";
-import {{ KnowledgePanel }} from "@/components/admin/KnowledgePanel";
-import {{ AgentChatPanel }} from "@/components/admin/AgentChatPanel";
-import {{ TuningPanel }} from "@/components/admin/TuningPanel";
+import { useState } from "react";
+import { KnowledgePanel } from "@/components/admin/KnowledgePanel";
+import { AgentChatPanel } from "@/components/admin/AgentChatPanel";
+import { TuningPanel } from "@/components/admin/TuningPanel";
 
-interface DashboardShellProps {{
+interface DashboardShellProps {
   verticalName: string;
   agentId: string;
-}}
+}
 
-export function DashboardShell({{ verticalName, agentId }}: DashboardShellProps) {{
+export function DashboardShell({ verticalName, agentId }: DashboardShellProps) {
   const [selectedKnowledge, setSelectedKnowledge] = useState<string | null>(null);
   const [tuningMode, setTuningMode] = useState<"examples" | "tone" | "settings">("examples");
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {{/* Left Panel - Knowledge Base */}}
+      {/* Left Panel - Knowledge Base */}
       <div className="w-80 border-r border-gray-200 bg-white overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="font-semibold text-gray-900">Knowledge Base</h2>
           <p className="text-sm text-gray-500">Train your agent with documents and FAQs</p>
         </div>
         <KnowledgePanel
-          agentId={{agentId}}
-          onSelect={{setSelectedKnowledge}}
-          selectedId={{selectedKnowledge}}
+          agentId={agentId}
+          onSelect={setSelectedKnowledge}
+          selectedId={selectedKnowledge}
         />
       </div>
 
-      {{/* Center Panel - Agent Chat (Test Interface) */}}
+      {/* Center Panel - Agent Chat (Test Interface) */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="p-4 border-b border-gray-200 bg-white">
           <h2 className="font-semibold text-gray-900">Test Your Agent</h2>
           <p className="text-sm text-gray-500">Preview how your agent responds to clients</p>
         </div>
         <AgentChatPanel
-          agentId={{agentId}}
-          verticalName={{verticalName}}
-          debugMode={{true}}
+          agentId={agentId}
+          verticalName={verticalName}
+          debugMode={true}
         />
       </div>
 
-      {{/* Right Panel - Tuning */}}
+      {/* Right Panel - Tuning */}
       <div className="w-80 border-l border-gray-200 bg-white overflow-hidden flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="font-semibold text-gray-900">Tuning</h2>
           <div className="flex gap-2 mt-2">
             <button
-              onClick={{() => setTuningMode("examples")}}
-              className={{`px-3 py-1 text-xs rounded-full ${{
+              onClick={() => setTuningMode("examples")}
+              className={`px-3 py-1 text-xs rounded-full ${
                 tuningMode === "examples"
                   ? "bg-blue-100 text-blue-700"
                   : "bg-gray-100 text-gray-600"
-              }}`}}
+              }`}
             >
               Examples
             </button>
             <button
-              onClick={{() => setTuningMode("tone")}}
-              className={{`px-3 py-1 text-xs rounded-full ${{
+              onClick={() => setTuningMode("tone")}
+              className={`px-3 py-1 text-xs rounded-full ${
                 tuningMode === "tone"
                   ? "bg-blue-100 text-blue-700"
                   : "bg-gray-100 text-gray-600"
-              }}`}}
+              }`}
             >
               Tone
             </button>
             <button
-              onClick={{() => setTuningMode("settings")}}
-              className={{`px-3 py-1 text-xs rounded-full ${{
+              onClick={() => setTuningMode("settings")}
+              className={`px-3 py-1 text-xs rounded-full ${
                 tuningMode === "settings"
                   ? "bg-blue-100 text-blue-700"
                   : "bg-gray-100 text-gray-600"
-              }}`}}
+              }`}
             >
               Settings
             </button>
           </div>
         </div>
         <TuningPanel
-          agentId={{agentId}}
-          mode={{tuningMode}}
+          agentId={agentId}
+          mode={tuningMode}
         />
       </div>
     </div>
   );
-}}
+}
 '''
 
         shell_path = components_dir / "DashboardShell.tsx"
@@ -795,8 +795,8 @@ export { TuningPanel } from "./TuningPanel";
         output_dir: Path,
         vertical_name: str,
         vertical_slug: str,
-        spec_data: Dict[str, Any]
-    ) -> List[str]:
+        spec_data: dict[str, Any]
+    ) -> list[str]:
         """Generate client-facing landing page with Start Onboarding CTA"""
         files_created = []
         landing_dir = output_dir / "src" / "app"
@@ -805,39 +805,39 @@ export { TuningPanel } from "./TuningPanel";
         components_dir.mkdir(parents=True, exist_ok=True)
 
         # Hero section component
-        hero_section = f'''// Hero Section with CTA
+        hero_section = '''// Hero Section with CTA
 "use client";
 
 import Link from "next/link";
-import {{ ArrowRight, CheckCircle }} from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 
-interface HeroSectionProps {{
+interface HeroSectionProps {
   title: string;
   subtitle: string;
   benefits: string[];
-}}
+}
 
-export function HeroSection({{ title, subtitle, benefits }}: HeroSectionProps) {{
+export function HeroSection({ title, subtitle, benefits }: HeroSectionProps) {
   return (
     <section className="relative min-h-[80vh] flex items-center bg-gradient-to-br from-blue-50 to-white">
       <div className="max-w-6xl mx-auto px-6 py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {{/* Left: Content */}}
+          {/* Left: Content */}
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-              {{title}}
+              {title}
             </h1>
             <p className="mt-6 text-xl text-gray-600">
-              {{subtitle}}
+              {subtitle}
             </p>
 
             <ul className="mt-8 space-y-3">
-              {{benefits.map((benefit, idx) => (
-                <li key={{idx}} className="flex items-center gap-3 text-gray-700">
+              {benefits.map((benefit, idx) => (
+                <li key={idx} className="flex items-center gap-3 text-gray-700">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  {{benefit}}
+                  {benefit}
                 </li>
-              ))}}
+              ))}
             </ul>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4">
@@ -857,7 +857,7 @@ export function HeroSection({{ title, subtitle, benefits }}: HeroSectionProps) {
             </div>
           </div>
 
-          {{/* Right: Visual */}}
+          {/* Right: Visual */}
           <div className="hidden md:block">
             <div className="relative">
               <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
@@ -881,7 +881,7 @@ export function HeroSection({{ title, subtitle, benefits }}: HeroSectionProps) {
                   </div>
                 </div>
               </div>
-              {{/* Decorative elements */}}
+              {/* Decorative elements */}
               <div className="absolute -z-10 top-4 right-4 w-full h-full bg-blue-100 rounded-2xl" />
             </div>
           </div>
@@ -889,7 +889,7 @@ export function HeroSection({{ title, subtitle, benefits }}: HeroSectionProps) {
       </div>
     </section>
   );
-}}
+}
 '''
 
         hero_path = components_dir / "HeroSection.tsx"
@@ -1197,8 +1197,8 @@ export const metadata = {{
         self,
         output_dir: Path,
         vertical_name: str,
-        spec_data: Dict[str, Any]
-    ) -> List[str]:
+        spec_data: dict[str, Any]
+    ) -> list[str]:
         """Generate marketing assets"""
         files_created = []
         public_dir = output_dir / "public"
@@ -1234,7 +1234,7 @@ Sitemap: /sitemap.xml
         self,
         output_dir: Path,
         vertical_slug: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate deployment configuration files"""
         files_created = []
 
@@ -1405,7 +1405,7 @@ jobs:
     def _wire_up_flow(
         self,
         output_dir: Path,
-        spec_data: Dict[str, Any]
+        spec_data: dict[str, Any]
     ) -> None:
         """Wire up the complete user flow: Landing → Onboarding → Chat → Dashboard"""
         # Create navigation config
@@ -1469,7 +1469,7 @@ export const config = {
         self,
         output_dir: Path,
         vertical_slug: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate next steps for deployment"""
         return [
             f"1. Navigate to output directory: cd {output_dir}",
@@ -1506,7 +1506,7 @@ export const config = {
             HermesDeploymentResult with paths to all created files.
         """
         profile_dir = Path(profile_dir)
-        files_created: List[str] = []
+        files_created: list[str] = []
 
         # ── Dockerfile ─────────────────────────────────────────────
         dockerfile_content = self._hermes_dockerfile_template(vertical_slug)
