@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vertical-agent-forge"
+version = "0.1.0"
+description = "Hermes Vertical Forge — self-building factory for vertical SMB AI agents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+dependencies = [
+    "PyYAML>=6.0,<7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "mypy>=1.8",
+    "ruff>=0.4",
+]
+
+# ---------------------------------------------------------------------------
+# setuptools — treat this repo as a flat layout package source so the
+# existing `core/`, `factory/`, and `tools/` directories are importable.
+# ---------------------------------------------------------------------------
+[tool.setuptools]
+packages = ["core", "core.orchestrator", "core.orchestrator.phases", "factory", "factory.generators"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "smoke: minimal sanity checks",
+    "unit: unit tests",
+]
+
+# ---------------------------------------------------------------------------
+# mypy — lenient baseline. Existing code was written without type stubs;
+# we surface issues but do not fail the gate on pre-existing errors yet.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+namespace_packages = true
+ignore_missing_imports = true
+follow_imports = "silent"
+# Start permissive; tighten as the port progresses.
+check_untyped_defs = false
+disallow_untyped_defs = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+# Exclude generated/vendored Next.js string content in phase modules.
+exclude = [
+    "factory/templates/",
+    "agents/",
+    "verticals/",
+]
+
+# ---------------------------------------------------------------------------
+# ruff — lint + format config
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+    "factory/templates",
+    "agents",
+    "verticals",
+    ".venv",
+]
+
+[tool.ruff.lint]
+# Conservative rule set for a legacy codebase being modernized.
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",  # line too long — formatter handles; legacy code has long strings
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Phase modules embed large Next.js source as string literals — don't lint them yet.
+"core/orchestrator/phases/*.py" = ["E", "W"]
+"core/orchestrator/factory-agent.py" = ["E", "W"]
+"tools/*.py" = ["E", "W"]

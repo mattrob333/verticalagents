@@ -1,0 +1,9 @@
+# Hermes Vertical Forge — Python runtime dependencies
+#
+# Generated from AST import analysis of the codebase. Only third-party
+# packages actually imported at the top level of Python modules are listed.
+# Dev/quality-gate tools (pytest, mypy, ruff) live in pyproject.toml
+# `[project.optional-dependencies.dev]` and are installed via:
+#   uv pip install -e ".[dev]"
+
+PyYAML>=6.0,<7.0
