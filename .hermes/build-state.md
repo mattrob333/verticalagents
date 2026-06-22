@@ -3,7 +3,7 @@
 **Spec source:** README.md, PLAYBOOK.md, CLAUDE.md
 **Repo:** https://github.com/mattrob333/verticalagents
 **Workspace:** ~/verticalagents
-**Status:** 🏗️ Phase 1 in progress — Task 1.8 done (Hermes scaffold), next: delivery.py adaptation
+**Status:** 🏗️ Phase 1 in progress — Tasks 1.1–1.10 complete, next: Task 1.11 (test profile loads in Hermes CLI)
 
 ## Architecture: Two-Tier Build Loop
 - Inner Loop (cron TBD) — every 10m: Check → Test → Advance → Repeat. Self-pauses both crons at a genuine stopping point.
@@ -75,11 +75,11 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 ## Phases / Waves
 
 ### Phase 1: Foundation — Make it Work (current)
-- [ ] Convert factory from Claude SDK to Hermes profile generation
-- [ ] Port construction-rfq as first Hermes vertical agent proof-of-concept
-- [ ] Create agent profile template with skills/, config.yaml, mcp-config.yaml
-- [ ] Get the dual-mode persona system exporting Hermes-compatible prompts
-- [x] Set up quality gate (Python tests, type checks) — pytest 5 passing, mypy+ruff functional
+- [x] Convert factory from Claude SDK to Hermes profile generation
+- [x] Port construction-rfq as first Hermes vertical agent proof-of-concept
+- [x] Create agent profile template with skills/, config.yaml, mcp-config.yaml
+- [x] Get the dual-mode persona system exporting Hermes-compatible prompts
+- [x] Set up quality gate (Python tests, type checks) — pytest 79 passing, ruff clean, mypy functional
 - [x] Reconnaissance complete
 
 ### Phase 2: Self-Building Factory
@@ -104,15 +104,16 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 - [x] Creative vision documented
 
 ## Open Issues / Blockers
-- Pre-existing ruff/mypy issues in legacy code (162 ruff, 6 mypy) — baseline, will be addressed during port
+- mypy: 6 pre-existing issues in core/orchestrator/ (legacy, baseline — will be addressed during port)
+- ruff: 0 errors (resolved via auto-fix + targeted noqa)
 
 ## Next Action
-- **Task 1.9: Adapt `delivery.py`** to output gateway configs + deployment manifests. The existing `core/orchestrator/phases/delivery.py` (48.9K) generates admin dashboards and client landing pages for Next.js apps — convert it to generate deployment-ready Hermes configs (Dockerfile, docker-compose, env templates, and a deployment README).
+- **Task 1.11: Test the profile can be loaded by Hermes CLI.** The construction-rfq Hermes profile is fully generated at `hermes-profiles/construction-rfq/` with config.yaml, system-prompt.md, SKILL.md, mcp-config.yaml, gateway.yaml, Dockerfile, docker-compose.yml. Task 1.11 verifies it loads cleanly in Hermes CLI. Task 1.12 updates README with Hermes Vertical Forge branding.
 
 ## Quality Gate (established)
-- `pytest` — 49 tests passing (5 smoke + 36 Hermes prompt generator + 8 Hermes scaffold)
+- `pytest` — 79 tests passing (5 smoke + 64 Hermes prompt generator incl. 10 regression tests for persona heading dedup + 8 Hermes scaffold + 2 delivery)
 - `mypy` — functional, 6 pre-existing issues in core/orchestrator/ (legacy, not refactored)
-- `ruff` — functional, 162 pre-existing issues (legacy code with embedded Next.js strings)
+- `ruff` — **0 errors** (auto-fixed 172 issues, suppressed 3 legacy F841 with noqa)
 - Run: `. .venv/bin/activate && pytest && ruff check . && mypy core/orchestrator/`
 - venv: `.venv/` (uv-managed), install: `uv pip install -e ".[dev]"`
 
@@ -122,4 +123,4 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 - The factory config YAML is excellent — make Hermes-aware
 - Commit each green slice before starting the next file
 
-**Last Updated:** 2026-06-22 — Phase 1 quality gate established (commit 55c5757), all open corrections resolved
+**Last Updated:** 2026-06-22 — All 3 open corrections resolved (HIGH: persona heading dedup, MEDIUM: build-state refresh, LOW: ruff auto-fix). 79 tests, ruff clean, 6 mypy baseline. Next: Task 1.11.
