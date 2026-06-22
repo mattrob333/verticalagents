@@ -1,0 +1,48 @@
+# Gateway Configuration Overlay — {{agent_name}}
+#
+# This file defines how clients connect to this vertical agent.
+# It overlays onto the Hermes gateway config when the profile is active.
+# Primary channel for SMB verticals: Telegram.
+
+# ---------------------------------------------------------------------------
+# Telegram (primary SMB channel)
+# ---------------------------------------------------------------------------
+telegram:
+  enabled: true
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  bot_name: "{{agent_name}}"
+  # Onboarding drives inline keyboard forms
+  onboarding:
+    config_file: onboarding.yaml
+    # Inline keyboard for select fields; text input for text fields
+    use_inline_keyboards: true
+  # Commands available to users
+  commands:
+    - name: start
+      description: "Begin or resume onboarding"
+    - name: status
+      description: "Check current onboarding status"
+    - name: restart
+      description: "Restart onboarding from the beginning"
+    - name: help
+      description: "Get help from {{agent_name}}"
+
+# ---------------------------------------------------------------------------
+# Web (optional — for non-Telegram users)
+# ---------------------------------------------------------------------------
+web:
+  enabled: false
+  # When enabled, exposes an API server for web UI integration
+  api_server:
+    port: 8080
+    cors_origins: ["${WEB_ORIGIN}"]
+
+# ---------------------------------------------------------------------------
+# SMS (optional — for clients who prefer text)
+# ---------------------------------------------------------------------------
+sms:
+  enabled: false
+  provider: twilio
+  account_sid: "${TWILIO_ACCOUNT_SID}"
+  auth_token: "${TWILIO_AUTH_TOKEN}"
+  from_number: "${TWILIO_FROM_NUMBER}"

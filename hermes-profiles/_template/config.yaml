@@ -1,0 +1,83 @@
+# Hermes Agent Profile Configuration — {{vertical_name}}
+#
+# This is the primary config for a generated vertical agent.
+# Template variables ({{...}}) are resolved per-client at deployment time.
+# Copy this to ~/.hermes/profiles/<vertical-slug>/config.yaml and fill in values.
+# NOTE: {{...}} placeholders are quoted to keep this file valid YAML; the
+# factory's scaffold phase strips quotes when resolving real values.
+
+model:
+  default: "{{model_default}}"            # e.g. anthropic/claude-sonnet-4.6
+  provider: "{{model_provider}}"          # e.g. openrouter
+  context_length: 200000
+
+agent:
+  max_turns: 90
+  # The dual-mode system prompt is loaded from system-prompt.md
+  system_prompt_file: system-prompt.md
+
+# ---------------------------------------------------------------------------
+# Client configuration — resolved from template variables at deploy time.
+# These populate {{company_name}}, {{markup_percentage}}, etc. in the prompt.
+# ---------------------------------------------------------------------------
+client:
+  company_name: "{{company_name}}"
+  company_specialty: "{{company_specialty}}"
+  markup_percentage: "{{markup_percentage}}"
+  labor_rate: "{{labor_rate}}"
+  overhead_rate: "{{overhead_rate}}"
+  response_time_target: "{{response_time_target}}"
+  auto_send: "{{auto_send}}"
+  escalation_threshold: "{{escalation_threshold}}"
+
+# ---------------------------------------------------------------------------
+# Toolsets — what this agent can do.
+# Vertical agents typically need: terminal (for file ops), file, web (research),
+# and messaging (to send proposals/notifications).
+# ---------------------------------------------------------------------------
+toolsets:
+  - file
+  - terminal
+  - web
+  - messaging
+  - skills
+
+# ---------------------------------------------------------------------------
+# MCP Servers — vertical-specific tool integrations.
+# Defined in mcp-config.yaml; Hermes loads them on profile startup.
+# ---------------------------------------------------------------------------
+mcp:
+  config_file: mcp-config.yaml
+
+# ---------------------------------------------------------------------------
+# Gateway — how clients talk to this agent.
+# Each vertical agent gets its own Telegram bot (primary channel for SMBs).
+# ---------------------------------------------------------------------------
+gateway:
+  platforms:
+    telegram:
+      enabled: true
+      bot_token: "${TELEGRAM_BOT_TOKEN}"
+      # Onboarding state machine drives the inline form flow
+      onboarding_config: onboarding.yaml
+
+# ---------------------------------------------------------------------------
+# Memory — vertical agents remember client context across sessions.
+# ---------------------------------------------------------------------------
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+
+# ---------------------------------------------------------------------------
+# Cron — resident tasks (daily check-ins, follow-up reminders).
+# ---------------------------------------------------------------------------
+cron:
+  config_dir: "cron/"
+
+# ---------------------------------------------------------------------------
+# Compression — handle long onboarding sessions.
+# ---------------------------------------------------------------------------
+compression:
+  enabled: true
+  threshold: 0.50
+  target_ratio: 0.20

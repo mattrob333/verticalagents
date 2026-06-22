@@ -1,0 +1,94 @@
+# Onboarding State Machine — {{agent_name}}
+#
+# Defines the structured intake flow for new users. The agent walks users
+# through these states sequentially, collecting data at each step.
+# When all states are complete, the agent transitions to CONSULTATION MODE.
+#
+# This is the Hermes-native representation of the factory's onboarding/flow.yaml.
+
+vertical: "{{vertical_slug}}"
+agent_name: "{{agent_name}}"
+
+# The case noun — what the agent is collecting (case, appointment, inquiry, quote)
+case_noun: "{{case_noun}}"
+
+# Welcome message shown when a user first connects
+welcome_message: |
+  {{welcome_message}}
+
+# Message shown when onboarding completes
+completion_message: |
+  {{completion_message}}
+
+# ---------------------------------------------------------------------------
+# Onboarding States (executed in order)
+# ---------------------------------------------------------------------------
+states:
+  - name: greeting
+    description: "Initial greeting and consent"
+    prompt: "Hi! I'm {{agent_name}}. I help {{company_name}} with {{vertical_name}}. To get started, I need to collect some information. Ready to begin?"
+    fields: []
+    transitions:
+      - on: "yes"
+        to: "collect_basic_info"
+      - on: "no"
+        to: "greeting"
+
+  - name: collect_basic_info
+    description: "Collect basic identifying information"
+    prompt: "Let's start with some basics."
+    fields:
+      - name: name
+        type: text
+        label: "Your name"
+        required: true
+      - name: company
+        type: text
+        label: "Company name"
+        required: true
+      - name: phone
+        type: phone
+        label: "Best phone number"
+        required: true
+      - name: email
+        type: text
+        label: "Email address"
+        required: true
+    transitions:
+      - on: "complete"
+        to: "{{next_state}}"
+
+  - name: collect_case_details
+    description: "Collect the {{case_noun}} details"
+    prompt: "Now tell me about your {{case_noun}}."
+    fields:
+      - name: case_type
+        type: select
+        label: "Type of {{case_noun}}"
+        options: ["{{option_1}}", "{{option_2}}", "{{option_3}}"]
+        required: true
+      - name: description
+        type: text
+        label: "Brief description"
+        required: true
+      - name: deadline
+        type: text
+        label: "Any deadline?"
+        required: false
+    transitions:
+      - on: "complete"
+        to: "review"
+
+  - name: review
+    description: "Review collected information and confirm"
+    prompt: "Let me confirm what I've collected. Is this correct?"
+    fields: []
+    transitions:
+      - on: "confirm"
+        to: "complete"
+      - on: "edit"
+        to: "collect_basic_info"
+
+  - name: complete
+    description: "Onboarding finished — transition to consultation mode"
+    terminal: true

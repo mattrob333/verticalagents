@@ -1,0 +1,64 @@
+# MCP Server Configuration — {{agent_name}}
+#
+# Defines the MCP tool servers this vertical agent uses.
+# These are vertical-specific integrations (document parsing, supplier lookups,
+# proposal generation, etc.) wired as MCP servers.
+#
+# Hermes loads these via `hermes mcp add` or directly from this file at
+# profile startup. Each server exposes tools the agent can call.
+
+servers:
+  # Document parsing — extract text/structure from PDFs, DOCX, images
+  - name: document-parser
+    command: "python"
+    args: ["-m", "mcp_document_parser"]
+    env:
+      DOCUMENT_PARSER_API_KEY: "${DOCUMENT_PARSER_API_KEY}"
+    tools:
+      - parse_document
+      - extract_tables
+      - ocr_image
+
+  # Vertical-specific data lookup (materials catalog, supplier database, etc.)
+  - name: "{{vertical_slug}}-data"
+    command: "python"
+    args: ["-m", "mcp_{{vertical_slug}}_data"]
+    env:
+      DATABASE_URL: "${DATABASE_URL}"
+    tools:
+      - search_materials
+      - get_suppliers
+      - get_supplier_quotes
+
+  # Communication — send emails, proposals, notifications
+  - name: comms
+    command: "python"
+    args: ["-m", "mcp_comms"]
+    env:
+      SENDGRID_API_KEY: "${SENDGRID_API_KEY}"
+      FROM_EMAIL: "${FROM_EMAIL}"
+    tools:
+      - send_email
+      - send_proposal
+      - notify_human
+
+  # Task management — create follow-ups, reminders
+  - name: tasks
+    command: "python"
+    args: ["-m", "mcp_tasks"]
+    env: {}
+    tools:
+      - create_task
+      - list_tasks
+      - complete_task
+
+  # Proposal generation — create PDF proposals/quotes/reports
+  - name: proposal-generator
+    command: "python"
+    args: ["-m", "mcp_proposal_generator"]
+    env:
+      TEMPLATE_DIR: "./templates"
+    tools:
+      - generate_proposal
+      - generate_quote
+      - generate_report
