@@ -30,6 +30,21 @@ class LandingSection:
     content: Dict[str, Any]
 
 
+@dataclass
+class HermesDeploymentResult:
+    """Result of Hermes deployment generation."""
+    profile_path: str
+    files_created: List[str]
+    vertical_slug: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "profile_path": self.profile_path,
+            "files_created": self.files_created,
+            "vertical_slug": self.vertical_slug,
+        }
+
+
 class DeliveryPhase:
     """
     Delivery Phase Handler
@@ -1467,6 +1482,214 @@ export const config = {
             "8. Test admin dashboard at http://localhost:3000/admin",
             "9. Deploy to Vercel: vercel --prod",
         ]
+
+    # ── Hermes deployment generation ──────────────────────────────
+
+    def generate_hermes_deployment(
+        self,
+        profile_dir: Path,
+        vertical_name: str,
+        vertical_slug: str,
+    ) -> HermesDeploymentResult:
+        """Generate deployment-ready files for a Hermes agent profile.
+
+        Creates a Dockerfile, docker-compose.yml, .env.example, and
+        DEPLOY.md inside ``profile_dir`` so the profile can be deployed
+        as a self-contained containerised Hermes agent.
+
+        Args:
+            profile_dir: Directory of the Hermes profile (already scaffolded).
+            vertical_name: Human-readable vertical name (e.g. "Construction RFQ").
+            vertical_slug: URL-friendly slug (e.g. "construction-rfq").
+
+        Returns:
+            HermesDeploymentResult with paths to all created files.
+        """
+        profile_dir = Path(profile_dir)
+        files_created: List[str] = []
+
+        # ── Dockerfile ─────────────────────────────────────────────
+        dockerfile_content = self._hermes_dockerfile_template(vertical_slug)
+        dockerfile_path = profile_dir / "Dockerfile"
+        dockerfile_path.write_text(dockerfile_content)
+        files_created.append(str(dockerfile_path))
+
+        # ── docker-compose.yml ────────────────────────────────────
+        compose_content = self._hermes_compose_template(vertical_slug)
+        compose_path = profile_dir / "docker-compose.yml"
+        compose_path.write_text(compose_content)
+        files_created.append(str(compose_path))
+
+        # ── .env.example ──────────────────────────────────────────
+        env_content = self._hermes_env_template(vertical_slug)
+        env_path = profile_dir / ".env.example"
+        env_path.write_text(env_content)
+        files_created.append(str(env_path))
+
+        # ── DEPLOY.md ─────────────────────────────────────────────
+        deploy_content = self._hermes_deploy_readme(vertical_name, vertical_slug)
+        deploy_path = profile_dir / "DEPLOY.md"
+        deploy_path.write_text(deploy_content)
+        files_created.append(str(deploy_path))
+
+        return HermesDeploymentResult(
+            profile_path=str(profile_dir),
+            files_created=files_created,
+            vertical_slug=vertical_slug,
+        )
+
+    # ── Hermes deployment templates ───────────────────────────────
+
+    @staticmethod
+    def _hermes_dockerfile_template(vertical_slug: str) -> str:
+        """Return a Dockerfile for running the Hermes profile in a container."""
+        return f'''# Dockerfile — Hermes Vertical Agent: {vertical_slug}
+# Builds a containerised Hermes agent from this profile.
+FROM python:3.11-slim
+
+# Install Hermes Agent CLI
+RUN pip install --no-cache-dir hermes-agent
+
+# Copy the Hermes profile into the container
+WORKDIR /agent
+COPY . /agent/
+
+# The profile directory contains skills/, config.yaml, system-prompt.md,
+# mcp-config.yaml, and gateway configuration for the {vertical_slug} vertical.
+ENV HERMES_PROFILE=/agent
+
+# Default command — run the Hermes agent with this profile
+CMD ["hermes", "run", "--profile", "/agent"]
+'''
+
+    @staticmethod
+    def _hermes_compose_template(vertical_slug: str) -> str:
+        """Return a docker-compose.yml for the Hermes profile."""
+        return f'''# docker-compose.yml — Hermes Vertical Agent: {vertical_slug}
+version: "3.9"
+
+services:
+  hermes-agent:
+    build: .
+    container_name: hermes-{vertical_slug}
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./:/agent
+      - hermes-data:/root/.hermes
+    # Expose the gateway port if a web/Telegram gateway is configured
+    ports:
+      - "8080:8080"
+
+volumes:
+  hermes-data:
+'''
+
+    @staticmethod
+    def _hermes_env_template(vertical_slug: str) -> str:
+        """Return a .env.example with all required environment variables."""
+        return f'''# .env.example — Hermes Vertical Agent: {vertical_slug}
+# Copy to .env and fill in real values before deploying.
+
+# ── LLM Provider ────────────────────────────────────────────────
+# Default provider + model for the agent
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+HERMES_MODEL=claude-sonnet-4-20250514
+HERMES_PROVIDER=anthropic
+
+# ── Telegram Gateway ────────────────────────────────────────────
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_ALLOWED_USERS=
+
+# ── MCP Tool Integrations ───────────────────────────────────────
+# Keys referenced by mcp-config.yaml tool definitions
+SENDGRID_API_KEY=
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+GOOGLE_CALENDAR_CLIENT_ID=
+GOOGLE_CALENDAR_CLIENT_SECRET=
+
+# ── Database ────────────────────────────────────────────────────
+DATABASE_URL=postgresql://user:password@localhost:5432/{vertical_slug}
+
+# ── Optional: Web Gateway ───────────────────────────────────────
+WEB_GATEWAY_PORT=8080
+'''
+
+    @staticmethod
+    def _hermes_deploy_readme(vertical_name: str, vertical_slug: str) -> str:
+        """Return a DEPLOY.md with deployment instructions."""
+        return f'''# Deployment Guide — {vertical_name}
+
+This directory contains a complete **Hermes agent profile** for the
+{vertical_name} vertical, ready to deploy as a containerised Hermes agent.
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- A Telegram bot token (from [@BotFather](https://t.me/BotFather)) — optional,
+  only if using the Telegram gateway
+- API keys for any MCP tools configured in `mcp-config.yaml`
+
+## Quick Start
+
+```bash
+# 1. Copy environment template and fill in values
+cp .env.example .env
+# Edit .env with your real API keys
+
+# 2. Build and run with Docker Compose
+docker-compose up -d --build
+
+# 3. Check logs
+docker-compose logs -f
+```
+
+The Hermes agent for **{vertical_slug}** will start and (if a Telegram bot
+token is provided) begin listening for messages from authorised users.
+
+## Profile Contents
+
+| File | Purpose |
+|------|---------|
+| `config.yaml` | Hermes agent configuration (model, provider, system prompt path) |
+| `system-prompt.md` | Dual-mode system prompt (onboarding + consultation) |
+| `skills/` | Persona skills — expertise, worldview, conversational style |
+| `mcp-config.yaml` | MCP tool integrations (SendGrid, Twilio, Calendar, etc.) |
+| `Dockerfile` | Container image definition |
+| `docker-compose.yml` | Orchestration config |
+| `.env.example` | Environment variable template |
+
+## Running Without Docker
+
+If you have Hermes installed locally:
+
+```bash
+# Install Hermes Agent CLI
+pip install hermes-agent
+
+# Run the agent with this profile
+hermes run --profile ./{vertical_slug}
+```
+
+## Customisation
+
+- **System prompt**: Edit `system-prompt.md` to adjust the agent's behaviour
+- **Persona**: Modify skills in `skills/` to change expertise and worldview
+- **Tools**: Add or remove MCP tools in `mcp-config.yaml`
+- **Gateway**: Configure Telegram or web gateway in `config.yaml`
+
+## Troubleshooting
+
+- **Agent not responding**: Check `.env` has valid `TELEGRAM_BOT_TOKEN` and
+  `TELEGRAM_ALLOWED_USERS`.
+- **MCP tools failing**: Verify each tool's API key is set in `.env`.
+- **Model errors**: Ensure `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is set
+  and matches `HERMES_PROVIDER` in `.env`.
+'''
 
 
 # Delivery phase prompts
