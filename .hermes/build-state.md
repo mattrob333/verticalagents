@@ -3,7 +3,7 @@
 **Spec source:** README.md, PLAYBOOK.md, CLAUDE.md
 **Repo:** https://github.com/mattrob333/verticalagents
 **Workspace:** ~/verticalagents
-**Status:** 🏗️ Phase 1 in progress — quality gate established, next: Hermes profile template
+**Status:** 🏗️ Phase 1 in progress — Task 1.7 done (Hermes prompt generation), next: scaffold.py adaptation
 
 ## Architecture: Two-Tier Build Loop
 - Inner Loop (cron TBD) — every 10m: Check → Test → Advance → Repeat. Self-pauses both crons at a genuine stopping point.
@@ -107,10 +107,10 @@ HERMES VERTICAL FORGE (two-tier autonomous build loop)
 - Pre-existing ruff/mypy issues in legacy code (162 ruff, 6 mypy) — baseline, will be addressed during port
 
 ## Next Action
-- **Task 1.6: Design the Hermes agent profile template** at `hermes-profiles/_template/` — the output format the factory will generate. Include `skills/`, `config.yaml`, `mcp-config.yaml`, `system-prompt.md`, `gateway.yaml`. This is the target structure that tasks 1.7–1.10 will produce.
+- **Task 1.8: Adapt `scaffold.py`** to output Hermes profile directory structure instead of Next.js apps. The existing `core/orchestrator/phases/scaffold.py` (28.8K) scaffolds Next.js apps — convert it to generate the `hermes-profiles/[vertical-slug]/` directory with `skills/`, `config.yaml`, `mcp-config.yaml`, `gateway.yaml`, `system-prompt.md`, and `onboarding.yaml`. Use `DualModePromptGenerator.generate_hermes()` and `generate_hermes_persona_skill()` to produce the prompt and skill files.
 
 ## Quality Gate (established)
-- `pytest` — 5 smoke tests passing (`tests/test_smoke.py`)
+- `pytest` — 41 tests passing (5 smoke + 36 Hermes prompt generator)
 - `mypy` — functional, 6 pre-existing issues in core/orchestrator/ (legacy, not refactored)
 - `ruff` — functional, 162 pre-existing issues (legacy code with embedded Next.js strings)
 - Run: `. .venv/bin/activate && pytest && ruff check . && mypy core/orchestrator/`

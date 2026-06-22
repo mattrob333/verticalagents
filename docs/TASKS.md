@@ -7,8 +7,8 @@
 - [x] **1.3** Add `pyproject.toml` with pytest, mypy, ruff
 - [x] **1.4** Add `requirements.txt` from discovered imports
 - [x] **1.5** Get first `pytest` passing (5 smoke tests)
-- [ ] **1.6** Design Hermes agent profile template (`hermes-profiles/_template/`)
-- [ ] **1.7** Adapt `prompt_generator.py` to output Hermes-compatible system prompts
+- [x] **1.6** Design Hermes agent profile template (`hermes-profiles/_template/`)
+- [x] **1.7** Adapt `prompt_generator.py` to output Hermes-compatible system prompts
 - [ ] **1.8** Adapt `scaffold.py` to output Hermes profile directory structure
 - [ ] **1.9** Adapt `delivery.py` to output gateway configs + deployment manifests
 - [ ] **1.10** Build first vertical Hermes profile as proof-of-concept (construction-rfq)

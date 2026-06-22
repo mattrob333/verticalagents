@@ -480,6 +480,280 @@ class DualModePromptGenerator:
 
         return self.generate(config)
 
+    # ==================================================================
+    # Hermes-native output (Phase 1.7)
+    # ==================================================================
+    # These methods render the Hermes profile template
+    # (hermes-profiles/_template/system-prompt.md) and persona skill
+    # (hermes-profiles/_template/skills/persona-template/SKILL.md) using
+    # markdown format instead of XML. The dual-mode architecture and
+    # persona system are preserved — only the output format changes.
+
+    def _hermes_template_path(self) -> Path:
+        return self.factory_root / "hermes-profiles" / "_template" / "system-prompt.md"
+
+    def _hermes_persona_skill_template_path(self) -> Path:
+        return (
+            self.factory_root
+            / "hermes-profiles"
+            / "_template"
+            / "skills"
+            / "persona-template"
+            / "SKILL.md"
+        )
+
+    def _render_hermes_worldview(self, persona: PersonaConfig) -> str:
+        """Render persona worldview as markdown for Hermes output."""
+        wv = persona.worldview
+        lines: list[str] = ["### Core Beliefs"]
+        for belief in wv.get("core_beliefs", []):
+            lines.append(f"- {belief}")
+        lines.append("")
+        lines.append("### What They Find Beautiful")
+        lines.append(wv.get("aesthetic", "N/A"))
+        lines.append("")
+        lines.append("### What Makes Them Cringe")
+        lines.append(wv.get("pet_peeves", "N/A"))
+        lines.append("")
+        lines.append("### Influences")
+        lines.append(wv.get("influences", "N/A"))
+        return "\n".join(lines)
+
+    def _render_hermes_expertise(self, persona: PersonaConfig) -> str:
+        """Render persona expertise as markdown for Hermes output."""
+        exp = persona.expertise
+        lines: list[str] = ["### Deep Mastery"]
+        for item in exp.get("deep_mastery", []):
+            lines.append(f"- {item}")
+        lines.append("")
+        lines.append("### Working Knowledge")
+        for item in exp.get("working_knowledge", []):
+            lines.append(f"- {item}")
+        lines.append("")
+        lines.append("### Curiosity Edges")
+        for item in exp.get("curiosity_edges", []):
+            lines.append(f"- {item}")
+        return "\n".join(lines)
+
+    def _render_hermes_style(self, persona: PersonaConfig) -> str:
+        """Render conversational style as markdown for Hermes output."""
+        style = persona.conversational_style
+        lines: list[str] = ["### How They Talk"]
+        lines.append(style.get("energy", "N/A"))
+        lines.append("")
+        lines.append("### Quirks")
+        if "signature_expressions" in style:
+            for expr in style["signature_expressions"]:
+                lines.append(f"- {expr}")
+        else:
+            lines.append("- (none defined)")
+        lines.append("")
+        lines.append("### Flexibility")
+        lines.append("The agent adapts to user intent:")
+        lines.append("- **Brainstorm mode** — generative, exploratory, \"what if\"")
+        lines.append("- **Teach mode** — structured explanation, examples, analogies")
+        lines.append("- **Build mode** — practical, step-by-step, action-oriented")
+        lines.append("- **Troubleshoot mode** — diagnostic, systematic")
+        return "\n".join(lines)
+
+    def _render_hermes_onboarding_states(self, states: list[OnboardingState]) -> str:
+        """Render onboarding states as markdown for Hermes output."""
+        if not states:
+            return "(No onboarding states defined)"
+        lines: list[str] = []
+        for state in states:
+            lines.append(f"#### {state.name}")
+            lines.append(f"- **Next:** {state.next}")
+            lines.append(f"- **Message:** {state.message}")
+            if state.required:
+                lines.append("- **Required:** yes")
+            lines.append("")
+        return "\n".join(lines)
+
+    def _render_hermes_tools(self, tools: list[dict[str, Any]]) -> str:
+        """Render tool definitions as markdown for Hermes output."""
+        if not tools:
+            return "(No tools defined)"
+        lines: list[str] = []
+        for tool in tools:
+            lines.append(f"- `{tool.get('name', '')}` — {tool.get('description', '')}")
+            if "input_schema" in tool:
+                schema = tool["input_schema"]
+                props = schema.get("properties", {})
+                required = schema.get("required", [])
+                for prop_name, prop_def in props.items():
+                    req = " (required)" if prop_name in required else ""
+                    desc = prop_def.get("description", "")
+                    ptype = prop_def.get("type", "string")
+                    lines.append(f"  - `{prop_name}` ({ptype}{req}): {desc}")
+        return "\n".join(lines)
+
+    def _render_hermes_escalation(self, triggers: list[str]) -> str:
+        """Render escalation triggers as markdown for Hermes output."""
+        if not triggers:
+            return "(No escalation triggers defined)"
+        lines: list[str] = []
+        for trigger in triggers:
+            lines.append(f"- {trigger}")
+        return "\n".join(lines)
+
+    def generate_hermes(self, config: PromptConfig) -> str:
+        """
+        Generate a Hermes-compatible system prompt (markdown format).
+
+        Renders the Hermes profile template
+        (hermes-profiles/_template/system-prompt.md) with resolved persona
+        values. Preserves the dual-mode architecture. Output is a complete
+        system prompt ready for a Hermes agent profile.
+
+        Args:
+            config: PromptConfig with all generation parameters.
+
+        Returns:
+            Complete Hermes system prompt string (markdown).
+        """
+        template_path = self._hermes_template_path()
+        if not template_path.exists():
+            raise FileNotFoundError(f"Hermes template not found: {template_path}")
+
+        prompt = template_path.read_text(encoding="utf-8")
+
+        # Basic substitutions (Hermes template uses lowercase vars)
+        prompt = prompt.replace("{{agent_name}}", config.agent_name)
+        prompt = prompt.replace("{{vertical_name}}", config.vertical_name)
+        prompt = prompt.replace("{{vertical_slug}}", config.vertical_slug)
+        # company_name stays as a runtime template variable (per-client)
+
+        # Persona
+        if config.persona:
+            essence = config.custom_variables.get(
+                "one_sentence_essence", config.persona.essence
+            )
+            prompt = prompt.replace("{{one_sentence_essence}}", essence)
+            prompt = prompt.replace(
+                "{{persona_worldview_core_beliefs}}",
+                self._render_hermes_worldview(config.persona),
+            )
+            prompt = prompt.replace(
+                "{{persona_expertise_deep}}",
+                self._render_hermes_expertise(config.persona),
+            )
+            prompt = prompt.replace(
+                "{{persona_style_how_they_talk}}",
+                self._render_hermes_style(config.persona),
+            )
+            # Flatten the persona section placeholders that the template uses
+            # as generic markers — replace with rendered sections inline.
+            prompt = self._inject_persona_sections(prompt, config.persona)
+
+        # Welcome / completion messages
+        welcome = config.custom_variables.get("welcome_message", "")
+        prompt = prompt.replace("{{welcome_message}}", welcome)
+        completion = config.custom_variables.get("completion_message", "")
+        prompt = prompt.replace("{{completion_message}}", completion)
+
+        # Onboarding states
+        prompt = prompt.replace(
+            "{{onboarding_states}}",
+            self._render_hermes_onboarding_states(config.onboarding_states),
+        )
+
+        # Tools
+        prompt = prompt.replace(
+            "{{mcp_tool_definitions}}",
+            self._render_hermes_tools(config.tools),
+        )
+
+        # Escalation triggers
+        prompt = prompt.replace(
+            "{{escalation_triggers}}",
+            self._render_hermes_escalation(config.escalation_triggers),
+        )
+
+        # Case noun
+        case_noun = config.custom_variables.get("case_noun", "case")
+        prompt = prompt.replace("{{case_noun}}", case_noun)
+
+        return prompt
+
+    def _inject_persona_sections(self, prompt: str, persona: PersonaConfig) -> str:
+        """Replace persona section placeholder markers with rendered markdown.
+
+        The template has generic {{persona_*}} placeholders in the persona
+        section. Replace any that remain with the full rendered sections
+        so the output is self-contained.
+        """
+        # The template's persona section references the companion skill, but
+        # also has inline placeholders. Inject the rendered worldview/expertise/
+        # style so the system prompt is complete on its own.
+        replacements = {
+            "{{persona_worldview_core_beliefs}}": self._render_hermes_worldview(persona),
+            "{{persona_expertise_deep}}": self._render_hermes_expertise(persona),
+            "{{persona_style_how_they_talk}}": self._render_hermes_style(persona),
+            "{{persona_worldview_beautiful}}": persona.worldview.get("aesthetic", ""),
+            "{{persona_worldview_cringe}}": persona.worldview.get("pet_peeves", ""),
+            "{{persona_worldview_influences}}": persona.worldview.get("influences", ""),
+            "{{persona_expertise_working}}": "\n".join(
+                f"- {item}" for item in persona.expertise.get("working_knowledge", [])
+            ),
+            "{{persona_expertise_curiosity}}": "\n".join(
+                f"- {item}" for item in persona.expertise.get("curiosity_edges", [])
+            ),
+            "{{persona_style_quirks}}": "\n".join(
+                f"- {expr}"
+                for expr in persona.conversational_style.get(
+                    "signature_expressions", []
+                )
+            ),
+            "{{persona_style_flexibility}}": (
+                "The agent adapts to user intent: brainstorm, teach, build, troubleshoot."
+            ),
+        }
+        for placeholder, value in replacements.items():
+            prompt = prompt.replace(placeholder, value)
+        return prompt
+
+    def generate_hermes_persona_skill(self, config: PromptConfig) -> str:
+        """
+        Generate the persona skill file (SKILL.md) for a Hermes profile.
+
+        Renders the persona skill template
+        (hermes-profiles/_template/skills/persona-template/SKILL.md) with
+        resolved persona values. This is the crown jewel — the worldview,
+        expertise, and conversational style that make the agent a thinking
+        partner.
+
+        Args:
+            config: PromptConfig with persona and vertical info.
+
+        Returns:
+            Complete SKILL.md content string.
+        """
+        template_path = self._hermes_persona_skill_template_path()
+        if not template_path.exists():
+            raise FileNotFoundError(
+                f"Hermes persona skill template not found: {template_path}"
+            )
+
+        skill = template_path.read_text(encoding="utf-8")
+
+        skill = skill.replace("{{vertical_slug}}", config.vertical_slug)
+        skill = skill.replace("{{agent_name}}", config.agent_name)
+        skill = skill.replace("{{vertical_name}}", config.vertical_name)
+        skill = skill.replace("{{company_name}}", config.company_name)
+
+        if config.persona:
+            essence = config.custom_variables.get(
+                "one_sentence_essence", config.persona.essence
+            )
+            skill = skill.replace("{{one_sentence_essence}}", essence)
+            skill = self._inject_persona_sections(skill, config.persona)
+
+        welcome = config.custom_variables.get("welcome_message", "")
+        skill = skill.replace("{{welcome_message}}", welcome)
+
+        return skill
+
 
 def main():
     """CLI interface for prompt generation"""
