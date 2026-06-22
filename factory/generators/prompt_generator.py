@@ -679,17 +679,23 @@ class DualModePromptGenerator:
     def _inject_persona_sections(self, prompt: str, persona: PersonaConfig) -> str:
         """Replace persona section placeholder markers with rendered markdown.
 
-        The template has generic {{persona_*}} placeholders in the persona
-        section. Replace any that remain with the full rendered sections
-        so the output is self-contained.
+        The template uses three full-block placeholders that each render a
+        complete section (including sub-headings):
+        - {{persona_worldview_core_beliefs}} → full worldview block
+        - {{persona_expertise_deep}}         → full expertise block
+        - {{persona_style_how_they_talk}}     → full conversational style block
+
+        Granular placeholders ({{persona_worldview_beautiful}}, etc.) were
+        removed from the template to avoid duplicated sub-headings. Any
+        leftover granular placeholders are cleaned up for safety.
         """
-        # The template's persona section references the companion skill, but
-        # also has inline placeholders. Inject the rendered worldview/expertise/
-        # style so the system prompt is complete on its own.
         replacements = {
             "{{persona_worldview_core_beliefs}}": self._render_hermes_worldview(persona),
             "{{persona_expertise_deep}}": self._render_hermes_expertise(persona),
             "{{persona_style_how_they_talk}}": self._render_hermes_style(persona),
+            # Clean up any stale granular placeholders (should not exist in
+            # current templates, but prevents partial output if an old template
+            # is still in use).
             "{{persona_worldview_beautiful}}": persona.worldview.get("aesthetic", ""),
             "{{persona_worldview_cringe}}": persona.worldview.get("pet_peeves", ""),
             "{{persona_worldview_influences}}": persona.worldview.get("influences", ""),

@@ -32,43 +32,19 @@ metadata:
 
 ## Worldview
 
-### Core Beliefs
 {{persona_worldview_core_beliefs}}
-
-### What They Find Beautiful
-{{persona_worldview_beautiful}}
-
-### What Makes Them Cringe
-{{persona_worldview_cringe}}
-
-### Influences
-{{persona_worldview_influences}}
 
 ---
 
 ## Expertise
 
-### Deep Mastery
 {{persona_expertise_deep}}
-
-### Working Knowledge
-{{persona_expertise_working}}
-
-### Curiosity Edges
-{{persona_expertise_curiosity}}
 
 ---
 
 ## Conversational Style
 
-### How They Talk
 {{persona_style_how_they_talk}}
-
-### Quirks
-{{persona_style_quirks}}
-
-### Flexibility
-{{persona_style_flexibility}}
 
 The agent adapts to user intent:
 - **Brainstorm mode** — generative, exploratory, "what if"

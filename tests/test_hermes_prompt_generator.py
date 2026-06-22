@@ -229,3 +229,36 @@ class TestHermesPersonaSkillGeneration:
         result = generator.generate_hermes_persona_skill(sample_config)
         assert "Expertise" in result or "expertise" in result.lower()
         assert "Construction estimation" in result
+
+    @pytest.mark.parametrize(
+        "heading",
+        [
+            "### Core Beliefs",
+            "### What They Find Beautiful",
+            "### What Makes Them Cringe",
+            "### Influences",
+            "### Deep Mastery",
+            "### Working Knowledge",
+            "### Curiosity Edges",
+            "### How They Talk",
+            "### Quirks",
+            "### Flexibility",
+        ],
+    )
+    def test_persona_skill_no_duplicate_subsection_headings(
+        self,
+        generator: DualModePromptGenerator,
+        sample_config: PromptConfig,
+        heading: str,
+    ) -> None:
+        """Regression: each persona subsection heading must appear exactly once.
+
+        Previously the template had both full-block placeholders (rendered with
+        sub-headings) AND hardcoded sub-headings with granular placeholders,
+        causing every heading to appear twice.
+        """
+        result = generator.generate_hermes_persona_skill(sample_config)
+        assert result.count(heading) == 1, (
+            f"Expected '{heading}' to appear exactly once, "
+            f"found {result.count(heading)} times"
+        )
