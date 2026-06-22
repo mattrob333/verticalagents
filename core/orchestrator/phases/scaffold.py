@@ -10,12 +10,15 @@ This phase:
 6. Sets up API routes
 """
 
-import os
-import shutil
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from dataclasses import dataclass
 import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from factory.generators.prompt_generator import (
+    DualModePromptGenerator,
+    PromptConfig,
+)
 
 
 @dataclass
@@ -32,6 +35,21 @@ class ScaffoldResult:
             "files_created": self.files_created,
             "dependencies": self.dependencies,
             "env_vars_needed": self.env_vars_needed
+        }
+
+
+@dataclass
+class HermesProfileResult:
+    """Result of Hermes profile scaffolding."""
+    output_path: str
+    files_created: List[str]
+    profile_slug: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "output_path": self.output_path,
+            "files_created": self.files_created,
+            "profile_slug": self.profile_slug,
         }
 
 
@@ -1006,3 +1024,209 @@ npx vercel
 *Built with [Vertical Agent Factory](https://github.com/tier4intelligence/vertical-agent-factory)*
 '''
         (output_dir / "README.md").write_text(readme)
+
+    # ==================================================================
+    # Hermes-native scaffolding (Phase 1.8)
+    # ==================================================================
+    # Generates a complete Hermes agent profile directory from the template
+    # at hermes-profiles/_template/. Uses DualModePromptGenerator to produce
+    # the system prompt and persona skill with resolved values. The existing
+    # Next.js scaffold (above) is preserved — this is a parallel output path.
+
+    def _hermes_template_dir(self) -> Path:
+        """Path to the Hermes profile template directory."""
+        return self.factory_root / "hermes-profiles" / "_template"
+
+    def _substitute_template_vars(
+        self, content: str, substitutions: Dict[str, str]
+    ) -> str:
+        """Replace {{var}} placeholders in template content.
+
+        Handles both quoted ("{{var}}") and unquoted placeholders.
+        Quoted placeholders get the quotes stripped if the replacement
+        value is numeric.
+        """
+        for key, value in substitutions.items():
+            # Replace quoted form: "{{key}}" -> value (strip quotes for numerics)
+            quoted = f'"{{{{{key}}}}}"'
+            if quoted in content:
+                if value.lstrip("-").isdigit():
+                    content = content.replace(quoted, value)
+                else:
+                    content = content.replace(quoted, f'"{value}"')
+            # Replace unquoted form
+            content = content.replace(f"{{{{{key}}}}}", value)
+        return content
+
+    def scaffold_hermes_profile(
+        self,
+        vertical_name: str,
+        vertical_slug: str,
+        specification: Dict[str, Any],
+        prompt_config: PromptConfig,
+        output_root: Optional[str] = None,
+    ) -> HermesProfileResult:
+        """Scaffold a complete Hermes agent profile directory.
+
+        Generates a deployable Hermes profile from the template at
+        hermes-profiles/_template/, with resolved persona values and
+        vertical-specific configuration. The dual-mode architecture and
+        persona system are preserved.
+
+        Args:
+            vertical_name: Human-readable vertical name.
+            vertical_slug: URL-friendly slug (e.g. "construction-rfq").
+            specification: Output from the specification phase, containing
+                          model config, client config, etc.
+            prompt_config: PromptConfig with persona, tools, onboarding
+                          states, and escalation triggers.
+            output_root: Directory to create the profile in. Defaults to
+                        hermes-profiles/ under the factory root.
+
+        Returns:
+            HermesProfileResult with output path and files created.
+        """
+        template_dir = self._hermes_template_dir()
+        if not template_dir.is_dir():
+            raise FileNotFoundError(
+                f"Hermes template directory not found: {template_dir}"
+            )
+
+        # Determine output directory
+        if output_root:
+            output_base = Path(output_root)
+        else:
+            output_base = self.factory_root / "hermes-profiles"
+        profile_dir = output_base / vertical_slug
+
+        # Create directory structure
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        (profile_dir / "skills" / f"{vertical_slug}-persona").mkdir(
+            parents=True, exist_ok=True
+        )
+        (profile_dir / "cron").mkdir(parents=True, exist_ok=True)
+        (profile_dir / "migrations").mkdir(parents=True, exist_ok=True)
+
+        files_created: List[str] = []
+
+        # Build substitutions for template files
+        model_config = specification.get("model", {})
+
+        # Build-time substitutions (resolved during scaffolding)
+        build_subs: Dict[str, str] = {
+            "vertical_name": vertical_name,
+            "vertical_slug": vertical_slug,
+            "agent_name": prompt_config.agent_name,
+            "model_default": model_config.get("default", ""),
+            "model_provider": model_config.get("provider", ""),
+            "case_noun": prompt_config.custom_variables.get("case_noun", "case"),
+            "welcome_message": prompt_config.custom_variables.get(
+                "welcome_message", ""
+            ),
+            "completion_message": prompt_config.custom_variables.get(
+                "completion_message", ""
+            ),
+        }
+
+        # --- Copy and substitute template files ---
+
+        # config.yaml
+        config_content = (template_dir / "config.yaml").read_text(
+            encoding="utf-8"
+        )
+        config_content = self._substitute_template_vars(
+            config_content, build_subs
+        )
+        config_path = profile_dir / "config.yaml"
+        config_path.write_text(config_content, encoding="utf-8")
+        files_created.append(str(config_path))
+
+        # mcp-config.yaml
+        mcp_content = (template_dir / "mcp-config.yaml").read_text(
+            encoding="utf-8"
+        )
+        mcp_content = self._substitute_template_vars(mcp_content, build_subs)
+        mcp_path = profile_dir / "mcp-config.yaml"
+        mcp_path.write_text(mcp_content, encoding="utf-8")
+        files_created.append(str(mcp_path))
+
+        # gateway.yaml
+        gateway_content = (template_dir / "gateway.yaml").read_text(
+            encoding="utf-8"
+        )
+        gateway_content = self._substitute_template_vars(
+            gateway_content, build_subs
+        )
+        gateway_path = profile_dir / "gateway.yaml"
+        gateway_path.write_text(gateway_content, encoding="utf-8")
+        files_created.append(str(gateway_path))
+
+        # onboarding.yaml
+        onboarding_content = (template_dir / "onboarding.yaml").read_text(
+            encoding="utf-8"
+        )
+        onboarding_content = self._substitute_template_vars(
+            onboarding_content, build_subs
+        )
+        onboarding_path = profile_dir / "onboarding.yaml"
+        onboarding_path.write_text(onboarding_content, encoding="utf-8")
+        files_created.append(str(onboarding_path))
+
+        # README.md
+        readme_template = (template_dir / "README.md").read_text(
+            encoding="utf-8"
+        )
+        readme_content = self._substitute_template_vars(
+            readme_template, build_subs
+        )
+        readme_path = profile_dir / "README.md"
+        readme_path.write_text(readme_content, encoding="utf-8")
+        files_created.append(str(readme_path))
+
+        # cron/daily-checkin.md
+        cron_template = template_dir / "cron" / "daily-checkin.md"
+        if cron_template.is_file():
+            cron_content = cron_template.read_text(encoding="utf-8")
+            cron_content = self._substitute_template_vars(
+                cron_content, build_subs
+            )
+            cron_path = profile_dir / "cron" / "daily-checkin.md"
+            cron_path.write_text(cron_content, encoding="utf-8")
+            files_created.append(str(cron_path))
+
+        # migrations/schema.sql
+        migrations_template = template_dir / "migrations" / "schema.sql"
+        if migrations_template.is_file():
+            migrations_content = migrations_template.read_text(
+                encoding="utf-8"
+            )
+            migrations_content = self._substitute_template_vars(
+                migrations_content, build_subs
+            )
+            migrations_path = profile_dir / "migrations" / "schema.sql"
+            migrations_path.write_text(migrations_content, encoding="utf-8")
+            files_created.append(str(migrations_path))
+
+        # --- Generate system-prompt.md via DualModePromptGenerator ---
+        generator = DualModePromptGenerator(factory_root=self.factory_root)
+        system_prompt = generator.generate_hermes(prompt_config)
+        prompt_path = profile_dir / "system-prompt.md"
+        prompt_path.write_text(system_prompt, encoding="utf-8")
+        files_created.append(str(prompt_path))
+
+        # --- Generate persona skill SKILL.md ---
+        persona_skill = generator.generate_hermes_persona_skill(prompt_config)
+        skill_path = (
+            profile_dir
+            / "skills"
+            / f"{vertical_slug}-persona"
+            / "SKILL.md"
+        )
+        skill_path.write_text(persona_skill, encoding="utf-8")
+        files_created.append(str(skill_path))
+
+        return HermesProfileResult(
+            output_path=str(profile_dir),
+            files_created=files_created,
+            profile_slug=vertical_slug,
+        )
